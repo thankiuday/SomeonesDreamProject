@@ -59,13 +59,27 @@ export const securityConfig = {
   
   // CORS configuration
   cors: {
-    origin: process.env.NODE_ENV === "production" 
-      ? [
-          process.env.FRONTEND_URL,
-          "https://streamify-frontend.onrender.com",
-          "https://your-frontend-app-name.onrender.com"
-        ].filter(Boolean)
-      : ["http://localhost:5173", "http://localhost:3000", "http://localhost:5001"],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = process.env.NODE_ENV === "production" 
+        ? [
+            process.env.FRONTEND_URL,
+            "https://someonesdreamproject-1.onrender.com",
+            "https://streamify-frontend.onrender.com",
+            "https://your-frontend-app-name.onrender.com"
+          ].filter(Boolean)
+        : ["http://localhost:5173", "http://localhost:3000", "http://localhost:5001"];
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log(`🚫 CORS blocked origin: ${origin}`);
+        console.log(`✅ Allowed origins:`, allowedOrigins);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],

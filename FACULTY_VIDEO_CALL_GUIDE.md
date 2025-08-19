@@ -128,10 +128,10 @@ FRONTEND_URL=https://your-frontend-url.com
 
 ### Automated Test
 Run the test script to verify functionality:
-```bash
+   ```bash
 cd backend
-node test-faculty-video-call.js
-```
+   node test-faculty-video-call.js
+   ```
 
 ## Recent Fixes Applied
 

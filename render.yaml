@@ -1,7 +1,7 @@
 services:
   # Backend Service
   - type: web
-    name: streamify-backend
+    name: someonesdreamproject
     env: node
     plan: starter
     buildCommand: npm install
@@ -26,19 +26,19 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: https://streamify-frontend.onrender.com
+        value: https://someonesdreamproject-1.onrender.com
     healthCheckPath: /api/health
     autoDeploy: true
 
   # Frontend Service
   - type: static
-    name: streamify-frontend
+    name: someonesdreamproject-1
     plan: starter
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://streamify-backend.onrender.com/api
+        value: https://someonesdreamproject.onrender.com/api
       - key: VITE_STREAM_API_KEY
         sync: false
     autoDeploy: true

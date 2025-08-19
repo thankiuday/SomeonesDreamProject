@@ -84,7 +84,13 @@ export async function login(req, res) {
 }
 
 export function logout(req, res) {
-  res.clearCookie("jwt");
+  // Clear cookie with the same options used to set it
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
+    domain: process.env.NODE_ENV === "production" ? process.env.COOKIE_DOMAIN : undefined,
+  });
   res.status(200).json({ success: true, message: "Logout successful" });
 }
 

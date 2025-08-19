@@ -9,6 +9,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET_KEY
@@ -29,12 +31,11 @@ services:
     autoDeploy: true
 
   # Frontend Service
-  - type: web
+  - type: static
     name: streamify-frontend
-    env: static
     plan: starter
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
         value: https://streamify-backend.onrender.com/api

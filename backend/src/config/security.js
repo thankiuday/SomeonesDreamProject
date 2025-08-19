@@ -60,8 +60,12 @@ export const securityConfig = {
   // CORS configuration
   cors: {
     origin: process.env.NODE_ENV === "production" 
-      ? [process.env.FRONTEND_URL, "https://yourdomain.com"].filter(Boolean)
-      : ["http://localhost:5173", "http://localhost:3000"],
+      ? [
+          process.env.FRONTEND_URL,
+          "https://streamify-frontend.onrender.com",
+          "https://your-frontend-app-name.onrender.com"
+        ].filter(Boolean)
+      : ["http://localhost:5173", "http://localhost:3000", "http://localhost:5001"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],

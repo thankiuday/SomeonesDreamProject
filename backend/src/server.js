@@ -83,10 +83,12 @@ app.get('/api/health', (req, res) => {
 
 // Production static files
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+  // Serve static files from the frontend build
+  app.use(express.static(path.join(__dirname, "../../frontend/dist")));
 
+  // Handle all other routes by serving the React app
   app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+    res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
   });
 }
 

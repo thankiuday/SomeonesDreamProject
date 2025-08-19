@@ -1,193 +1,190 @@
-# Faculty Video Call Feature Guide
+# Faculty Video Call Troubleshooting Guide
 
-## Overview
+## Issue: Black Page When Starting Video Call
 
-The Faculty Video Call feature allows faculty members to automatically start video calls and send the generated links to classroom members. This feature provides two main functionalities:
+If you're experiencing a black page when starting a faculty video call, follow this troubleshooting guide to identify and resolve the issue.
 
-1. **Start Video Call**: Automatically generate a video call link and send it to classroom members
-2. **Send Video Call Link**: Send an existing video call link to classroom members
+## Quick Diagnosis
 
-## Features
+### 1. Check Browser Console
+Open the browser's Developer Tools (F12) and check the Console tab for any error messages when the video call page loads.
 
-### 1. Start Video Call (New Feature)
+Common error messages and solutions:
 
-**What it does:**
-- Automatically generates a unique video call URL
-- Sends the video call link to all classroom members or specific members
-- Opens the video call in a new tab for the faculty member
-- Saves the message to the database for AI analysis
+- **"Authentication required. Please log in."**
+  - Solution: Refresh the page and log in again
+  - Check if cookies are enabled in your browser
 
-**How to use:**
-1. Go to Faculty Dashboard
-2. Click "Send Message" on any room
-3. Select "Start Video Call" tab
-4. Enter an optional call title
-5. Choose to send to all members or specific user
-6. Click "Start Video Call & Send Link"
+- **"Failed to get video call token"**
+  - Solution: Check if Stream API is properly configured
+  - Verify `VITE_STREAM_API_KEY` environment variable
 
-**Quick Access:**
-- Use the "Start Video Call" button directly on room cards in the Faculty Dashboard
+- **"Video call service is not configured"**
+  - Solution: Contact administrator to verify Stream configuration
 
-### 2. Send Video Call Link (Existing Feature)
+### 2. Check Network Tab
+In Developer Tools > Network tab, look for failed requests:
+- `/api/auth/me` - Authentication check
+- `/api/chat/token` - Stream token generation
+- Any 401/403/500 errors
 
-**What it does:**
-- Sends an existing video call URL to classroom members
-- Useful for external video call platforms (Google Meet, Zoom, etc.)
+## Common Issues and Solutions
 
-**How to use:**
-1. Go to Faculty Dashboard
-2. Click "Send Message" on any room
-3. Select "Video Call Link" tab
-4. Enter the video call URL and optional title
-5. Choose recipients
-6. Click "Send Video Call Link"
+### Issue 1: Authentication Problems
 
-## Technical Implementation
+**Symptoms:**
+- Black page with no content
+- Console shows "Authentication required"
 
-### Backend API Endpoints
+**Solutions:**
+1. Clear browser cookies and cache
+2. Log out and log back in
+3. Check if you're logged in on the main dashboard
+4. Verify the session hasn't expired
 
-#### 1. Start Faculty Video Call
-```
-POST /api/faculty-messaging/start-video-call
-```
+### Issue 2: Stream API Configuration
 
-**Request Body:**
-```json
-{
-  "roomId": "room_id_here",
-  "callTitle": "Optional Call Title",
-  "targetUserId": "specific_user_id_or_null"
-}
-```
+**Symptoms:**
+- "Video call service is not configured" error
+- "Failed to get video call token" error
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Video call started and link sent to room members",
-  "callId": "faculty-room_id-timestamp",
-  "callUrl": "http://localhost:5173/call/faculty-room_id-timestamp",
-  "results": [...],
-  "totalSent": 5,
-  "totalFailed": 0
-}
-```
+**Solutions:**
+1. Verify `VITE_STREAM_API_KEY` is set in frontend environment
+2. Verify `STREAM_API_KEY` and `STREAM_API_SECRET` are set in backend environment
+3. Check if Stream service is accessible
 
-#### 2. Send Video Call Link
-```
-POST /api/faculty-messaging/send-video-call
-```
+### Issue 3: Pop-up Blocker
 
-**Request Body:**
-```json
-{
-  "roomId": "room_id_here",
-  "callUrl": "https://meet.google.com/xxx-xxxx-xxx",
-  "callTitle": "Optional Call Title",
-  "targetUserId": "specific_user_id_or_null"
-}
+**Symptoms:**
+- Video call starts but no new tab opens
+- "Pop-up blocked" message
+
+**Solutions:**
+1. Allow pop-ups for the website
+2. Check if the video call URL was copied to clipboard
+3. Manually open the video call URL
+
+### Issue 4: Network Issues
+
+**Symptoms:**
+- "Network error" messages
+- Slow loading or timeouts
+
+**Solutions:**
+1. Check internet connection
+2. Try refreshing the page
+3. Check if the backend server is accessible
+
+## Step-by-Step Debugging
+
+### Step 1: Verify Authentication
+```javascript
+// In browser console, check if user is authenticated
+fetch('/api/auth/me', { credentials: 'include' })
+  .then(res => res.json())
+  .then(data => console.log('Auth status:', data))
+  .catch(err => console.error('Auth error:', err));
 ```
 
-### Frontend Components
+### Step 2: Check Stream Token
+```javascript
+// In browser console, check if Stream token is available
+fetch('/api/chat/token', { credentials: 'include' })
+  .then(res => res.json())
+  .then(data => console.log('Stream token:', data))
+  .catch(err => console.error('Token error:', err));
+```
 
-#### 1. FacultyMessaging Component
-- Added new "Start Video Call" tab
-- Integrated with existing messaging interface
-- Supports both individual and group messaging
+### Step 3: Test Video Call URL
+1. Copy the video call URL from the console or clipboard
+2. Open it in a new tab manually
+3. Check if the same black page appears
 
-#### 2. FacultyDashboard Component
-- Added "Start Video Call" button on room cards
-- Quick access to start video calls for entire rooms
+### Step 4: Check Environment Variables
+Verify these environment variables are set:
 
-### Database Integration
+**Frontend (.env):**
+```
+VITE_API_BASE_URL=https://your-backend-url.com/api
+VITE_STREAM_API_KEY=your-stream-api-key
+```
 
-- Messages are saved to the local database for AI analysis
-- Stream Chat integration for real-time messaging
-- Room-based targeting for classroom management
+**Backend (.env):**
+```
+STREAM_API_KEY=your-stream-api-key
+STREAM_API_SECRET=your-stream-api-secret
+FRONTEND_URL=https://your-frontend-url.com
+```
 
-## Usage Scenarios
+## Testing the Video Call
 
-### Scenario 1: Quick Class Video Call
-1. Faculty logs into dashboard
-2. Sees their classroom rooms
-3. Clicks "Start Video Call" on the desired room
-4. Video call link is automatically sent to all students
-5. Faculty is redirected to the video call
+### Manual Test
+1. Log in as faculty
+2. Create a room or use existing room
+3. Click "Start Video Call"
+4. Check console for any errors
+5. Verify the new tab opens
+6. Check if video call interface loads
 
-### Scenario 2: Individual Student Support
-1. Faculty opens messaging for a room
-2. Selects "Start Video Call" tab
-3. Chooses "Specific User" option
-4. Selects the student from dropdown
-5. Starts video call for individual support
+### Automated Test
+Run the test script to verify functionality:
+```bash
+cd backend
+node test-faculty-video-call.js
+```
 
-### Scenario 3: External Platform Integration
-1. Faculty creates a Google Meet/Zoom meeting
-2. Uses "Send Video Call Link" feature
-3. Pastes the external meeting URL
-4. Sends to classroom members
+## Recent Fixes Applied
 
-## Security Features
+### 1. Improved Error Handling
+- Added comprehensive error states in CallPage component
+- Better error messages for different failure scenarios
+- Graceful fallbacks when services are unavailable
 
-- Faculty can only start video calls for their own rooms
-- Proper authentication and authorization checks
-- Input validation for all parameters
-- Rate limiting and error handling
+### 2. Enhanced Loading States
+- Clear loading indicators during authentication
+- Better visual feedback during call initialization
+- Proper background colors to prevent black screen
 
-## Error Handling
+### 3. Authentication Validation
+- Added checks for authentication state
+- Retry logic for token generation
+- Better handling of expired sessions
 
-- Invalid room ID validation
-- Faculty ownership verification
-- Target user existence checks
-- Stream Chat integration error handling
-- Database operation error handling
+### 4. Stream Configuration Validation
+- Added checks for Stream API configuration
+- Better error messages for missing credentials
+- Validation before attempting to start calls
 
-## Testing
+## Contact Support
 
-Use the provided test file `test-faculty-video-call.js` to test the functionality:
+If you're still experiencing issues after following this guide:
 
-1. Replace test data with actual values:
-   - `facultyToken`: Valid faculty JWT token
-   - `roomId`: Valid room ID owned by the faculty
-   - `targetUserId`: Optional specific user ID
+1. **Collect Debug Information:**
+   - Browser console errors
+   - Network tab requests
+   - Environment variable status
+   - Steps to reproduce the issue
 
-2. Run the test:
-   ```bash
-   node test-faculty-video-call.js
-   ```
+2. **Contact Information:**
+   - Create an issue with the debug information
+   - Include browser type and version
+   - Mention if this is a new issue or regression
 
-## Future Enhancements
+## Prevention
 
-1. **Scheduled Video Calls**: Allow faculty to schedule video calls for future times
-2. **Video Call Recording**: Integrate with video call platforms for recording
-3. **Attendance Tracking**: Track which students joined the video call
-4. **Multiple Platform Support**: Direct integration with Google Meet, Zoom, etc.
-5. **Video Call Analytics**: Track call duration, participation, etc.
+To prevent this issue in the future:
 
-## Troubleshooting
+1. **Regular Testing:**
+   - Test video calls after deployments
+   - Verify environment variables are set correctly
+   - Monitor for authentication issues
 
-### Common Issues
+2. **User Education:**
+   - Inform users about pop-up blockers
+   - Provide clear instructions for video call usage
+   - Share this troubleshooting guide
 
-1. **"Room not found" error**
-   - Verify the room ID is correct
-   - Ensure the faculty owns the room
-
-2. **"Failed to send video call link" error**
-   - Check Stream Chat configuration
-   - Verify user permissions
-
-3. **Video call doesn't open**
-   - Check browser popup settings
-   - Verify the call URL is accessible
-
-### Debug Steps
-
-1. Check browser console for errors
-2. Verify backend logs for API errors
-3. Test with the provided test script
-4. Check Stream Chat configuration
-5. Verify database connectivity
-
-## Support
-
-For technical support or feature requests, please refer to the main project documentation or contact the development team.
+3. **Monitoring:**
+   - Monitor authentication failures
+   - Track video call success rates
+   - Log Stream API errors for investigation

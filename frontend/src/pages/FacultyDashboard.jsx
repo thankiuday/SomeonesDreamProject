@@ -12,6 +12,8 @@ import {
   VideoIcon
 } from "lucide-react";
 import FacultyMessaging from "../components/FacultyMessaging";
+import VideoCallLoader from "../components/VideoCallLoader";
+import useVideoCallStore from "../store/useVideoCallStore";
 
 const FacultyDashboard = () => {
   const queryClient = useQueryClient();
@@ -19,6 +21,19 @@ const FacultyDashboard = () => {
   const [roomName, setRoomName] = useState("");
   const [newRoomInviteCode, setNewRoomInviteCode] = useState("");
   const [selectedRoomForMessaging, setSelectedRoomForMessaging] = useState(null);
+  const [showVideoCallLoader, setShowVideoCallLoader] = useState(false);
+
+  // Global video call store
+  const { 
+    isVideoCallInProgress, 
+    currentCallUrl, 
+    isOpeningVideoCall,
+    startVideoCall, 
+    setCallUrl, 
+    completeVideoCall, 
+    setOpeningVideoCall,
+    canStartVideoCall 
+  } = useVideoCallStore();
 
   // Fetch faculty rooms
   const { data: roomsData, isLoading: loadingRooms, error: roomsError } = useQuery({
@@ -52,15 +67,70 @@ const FacultyDashboard = () => {
   const { mutate: startVideoCallMutation, isPending: startingVideoCall } = useMutation({
     mutationFn: startFacultyVideoCall,
     onSuccess: (data) => {
-      toast.success(`Video call started and link sent to ${data.totalSent} members!`);
-      if (data.callUrl) {
-        window.open(data.callUrl, '_blank');
+      console.log("✅ Video call started successfully:", data);
+      
+      const successMessage = data.totalSent > 0 
+        ? `Video call started and link sent to ${data.totalSent} members!`
+        : "Video call started successfully!";
+      
+      toast.success(successMessage);
+      
+      // Show detailed results if there were failures
+      if (data.totalFailed > 0) {
+        console.log("⚠️ Some video call links failed to send:", data.results);
+        toast.error(`${data.totalFailed} members didn't receive the video call link. Check the console for details.`);
       }
+      
+      // Store the call URL and show the video call loader
+      setCallUrl(data.callUrl);
+      setShowVideoCallLoader(true);
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || "Failed to start video call");
+      console.error("❌ Failed to start video call:", error);
+      completeVideoCall();
+      
+      let errorMessage = "Failed to start video call";
+      
+      if (error.response?.status === 404) {
+        errorMessage = "Room not found. Please refresh the page and try again.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "You don't have permission to start video calls for this room.";
+      } else if (error.response?.status === 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (error.message?.includes("network")) {
+        errorMessage = "Network error. Please check your connection and try again.";
+      }
+      
+      toast.error(errorMessage);
     },
   });
+
+  const handleVideoCallComplete = () => {
+    setShowVideoCallLoader(false);
+    
+    // Prevent multiple tabs from being opened
+    if (isOpeningVideoCall || !currentCallUrl) {
+      return;
+    }
+    
+    setOpeningVideoCall(true);
+    
+    console.log("🎥 Opening video call URL:", currentCallUrl);
+    
+    const newWindow = window.open(currentCallUrl, '_blank');
+    
+    // Check if the window was blocked
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      toast.error("Pop-up blocked! Please allow pop-ups and click the video call link manually.");
+      // Copy the URL to clipboard as fallback
+      navigator.clipboard.writeText(currentCallUrl);
+      toast.success("Video call URL copied to clipboard!");
+    } else {
+      toast.success("Video call opened successfully!");
+    }
+    
+    completeVideoCall();
+  };
 
   const handleCreateRoom = (e) => {
     e.preventDefault();
@@ -186,7 +256,11 @@ const FacultyDashboard = () => {
                     <div className="card-actions justify-end mt-4">
                       <button 
                         className="btn btn-primary btn-sm"
-                        onClick={() => setSelectedRoomForMessaging(room)}
+                        onClick={() => {
+                          console.log('🔍 FacultyDashboard - Setting room for messaging:', room);
+                          console.log('🔍 FacultyDashboard - Room ID:', room._id);
+                          setSelectedRoomForMessaging(room);
+                        }}
                       >
                         <MessageCircleIcon className="size-4 mr-1" />
                         Send Message
@@ -194,23 +268,47 @@ const FacultyDashboard = () => {
                       <button 
                         className="btn btn-success btn-sm"
                         onClick={() => {
-                          // Start video call directly for this room
-                          const callData = {
-                            roomId: room._id,
-                            callTitle: `${room.roomName} - Video Call`,
-                            targetUserId: null // Send to all members
-                          };
+                          console.log("🎥 FacultyDashboard - Start Video Call button clicked");
                           
-                          startVideoCallMutation(callData);
+                                                     // Prevent multiple video calls from being started
+                           if (!canStartVideoCall()) {
+                             console.log("🎥 FacultyDashboard - Video call already in progress globally, ignoring click");
+                             toast.error("A video call is already in progress. Please wait for it to complete.");
+                             return;
+                           }
+                           
+                           if (startingVideoCall || showVideoCallLoader) {
+                             console.log("🎥 FacultyDashboard - Video call already in progress locally, ignoring click");
+                             return;
+                           }
+                           
+                           console.log("🎥 FacultyDashboard - Starting video call for room:", room._id);
+                           
+                           // Set global video call state
+                           startVideoCall();
+                           
+                           // Start video call directly for this room
+                           const callData = {
+                             roomId: room._id,
+                             callTitle: `${room.roomName} - Video Call`,
+                             targetUserId: null // Send to all members
+                           };
+                           
+                           startVideoCallMutation(callData);
                         }}
-                        disabled={startingVideoCall}
+                                                 disabled={startingVideoCall || showVideoCallLoader || !canStartVideoCall()}
                       >
                         {startingVideoCall ? (
-                          <span className="loading loading-spinner loading-xs" />
+                          <>
+                            <span className="loading loading-spinner loading-xs mr-1" />
+                            Starting...
+                          </>
                         ) : (
-                          <VideoIcon className="size-4 mr-1" />
+                          <>
+                            <VideoIcon className="size-4 mr-1" />
+                            Start Video Call
+                          </>
                         )}
-                        Start Video Call
                       </button>
                     </div>
                   </div>
@@ -320,6 +418,12 @@ const FacultyDashboard = () => {
           onClose={() => setSelectedRoomForMessaging(null)}
         />
       )}
+
+      {/* Video Call Loader */}
+      <VideoCallLoader 
+        isVisible={showVideoCallLoader} 
+        onComplete={handleVideoCallComplete} 
+      />
     </div>
   );
 };

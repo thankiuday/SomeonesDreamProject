@@ -1,79 +1,126 @@
-<h1 align="center">✨ Fullstack Chat & Video Calling App ✨</h1>
+# Streamify - Video Calls and Messaging Platform
 
-![Demo App](/frontend/public/screenshot-for-readme.png)
+A modern video calling and messaging platform built for educational institutions, featuring real-time communication, file sharing, and AI-powered features.
 
-Highlights:
+## 🚀 Quick Start
 
-- 🌐 Real-time Messaging with Typing Indicators & Reactions
-- 📹 1-on-1 and Group Video Calls with Screen Sharing & Recording
-- 🔐 JWT Authentication & Protected Routes
-- 🌍 Language Exchange Platform with 32 Unique UI Themes
-- ⚡ Tech Stack: React + Express + MongoDB + TailwindCSS + TanStack Query
-- 🧠 Global State Management with Zustand
-- 🚨 Error Handling (Frontend & Backend)
-- 🚀 Free Deployment
-- 🎯 Built with Scalable Technologies like Stream
-- 👨‍🏫 Faculty Messaging System with File Uploads & Video Call Links
-- ☁️ Cloudinary Integration for Secure File Storage
-- ⏳ And much more!
+### Prerequisites
+- Node.js >= 18.0.0
+- MongoDB Atlas account
+- Stream Chat account
+- Cloudinary account
 
----
+### Local Development
 
-## 🧪 .env Setup
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd streamify-video-calls-master
+   ```
 
-### Backend (`/backend`)
+2. **Set up Backend**
+   ```bash
+   cd backend
+   npm install
+   cp env.example .env
+   # Edit .env with your credentials
+   npm run dev
+   ```
+
+3. **Set up Frontend**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+### Deployment
+
+For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+
+**Quick Deploy on Render:**
+1. Fork this repository
+2. Set up MongoDB Atlas, Stream Chat, and Cloudinary
+3. Deploy backend as Web Service
+4. Deploy frontend as Static Site
+5. Configure environment variables
+
+## 🛠️ Features
+
+- **Real-time Video Calls**: Powered by Stream Video SDK
+- **Instant Messaging**: Group and private chats
+- **File Sharing**: Secure file uploads via Cloudinary
+- **User Management**: Authentication, profiles, friend system
+- **Room Management**: Create and join video call rooms
+- **AI Integration**: Smart features and assistance
+- **Responsive Design**: Works on desktop and mobile
+
+## 📁 Project Structure
 
 ```
-PORT=5001
-MONGO_URI=your_mongo_uri
-STEAM_API_KEY=your_steam_api_key
-STEAM_API_SECRET=your_steam_api_secret
-JWT_SECRET_KEY=your_jwt_secret
+├── backend/                 # Node.js/Express API
+│   ├── src/
+│   │   ├── controllers/     # API controllers
+│   │   ├── models/         # MongoDB models
+│   │   ├── routes/         # API routes
+│   │   ├── middleware/     # Custom middleware
+│   │   └── config/         # Configuration files
+│   └── package.json
+├── frontend/               # React/Vite application
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── pages/         # Page components
+│   │   ├── hooks/         # Custom hooks
+│   │   └── lib/           # Utilities and API
+│   └── package.json
+└── docs/                  # Documentation
+```
+
+## 🔧 Environment Variables
+
+### Backend (.env)
+```env
+MONGODB_URI=your-mongodb-connection-string
+JWT_SECRET_KEY=your-jwt-secret
+STREAM_API_KEY=your-stream-api-key
+STREAM_API_SECRET=your-stream-api-secret
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 NODE_ENV=development
-
-# Cloudinary Configuration (for file uploads)
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+PORT=5001
+FRONTEND_URL=http://localhost:5173
 ```
 
-### Frontend (`/frontend`)
-
-```
-VITE_STREAM_API_KEY=your_stream_api_key
-```
-
----
-
-## 🔧 Run the Backend
-
-```bash
-cd backend
-npm install
-npm run dev
+### Frontend (.env)
+```env
+VITE_API_BASE_URL=http://localhost:5001/api
+VITE_STREAM_API_KEY=your-stream-api-key
 ```
 
-## 💻 Run the Frontend
+## 📚 Documentation
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+- [Deployment Guide](./DEPLOYMENT_GUIDE.md)
+- [Faculty Messaging Guide](./FACULTY_MESSAGING_GUIDE.md)
+- [Student Messaging Guide](./STUDENT_MESSAGING_GUIDE.md)
+- [Testing Guide](./TESTING_GUIDE.md)
 
-## 👨‍🏫 Faculty Messaging Features
+## 🤝 Contributing
 
-The application includes a comprehensive faculty messaging system that allows faculty members to:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-- **Send Text Messages**: Send messages to all room members or specific individuals
-- **Upload Files**: Share images, documents, PDFs, and presentations via Cloudinary
-- **Video Call Links**: Share video call links with room members
-- **Targeted Communication**: Choose between sending to all members or specific users
-- **Real-time Notifications**: Messages are delivered instantly through Stream Chat
+## 📄 License
 
-### Setup Cloudinary
+This project is licensed under the MIT License.
 
-1. Create a free account at [Cloudinary](https://cloudinary.com/)
-2. Get your credentials from the dashboard
-3. Add them to your `.env` file as shown above
-4. Files will be automatically uploaded to the `faculty-messages` folder in your Cloudinary account
+## 🆘 Support
+
+If you encounter any issues:
+1. Check the troubleshooting section in the deployment guide
+2. Review the logs in your hosting platform
+3. Ensure all environment variables are correctly set
+4. Test locally first to isolate issues

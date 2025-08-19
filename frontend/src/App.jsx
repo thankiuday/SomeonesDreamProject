@@ -27,6 +27,22 @@ const App = () => {
   const isAuthenticated = Boolean(authUser);
   const isOnboarded = authUser?.isOnboarded;
 
+  // Helper function to get the appropriate dashboard path based on user role
+  const getDashboardPath = () => {
+    if (!authUser?.role) return "/";
+    
+    switch (authUser.role) {
+      case "faculty":
+        return "/faculty-dashboard";
+      case "parent":
+        return "/parent-dashboard";
+      case "student":
+        return "/student-dashboard";
+      default:
+        return "/";
+    }
+  };
+
   if (isLoading) return <PageLoader />;
 
   return (
@@ -66,7 +82,7 @@ const App = () => {
                 <FacultyDashboard />
               </Layout>
             ) : (
-              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : "/"} />
+              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : getDashboardPath()} />
             )
           }
         />
@@ -79,7 +95,7 @@ const App = () => {
                 <ParentDashboard />
               </Layout>
             ) : (
-              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : "/"} />
+              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : getDashboardPath()} />
             )
           }
         />
@@ -92,7 +108,7 @@ const App = () => {
                 <StudentDashboard />
               </Layout>
             ) : (
-              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : "/"} />
+              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : getDashboardPath()} />
             )
           }
         />
@@ -105,20 +121,20 @@ const App = () => {
                 <FacultyMessagesPage />
               </Layout>
             ) : (
-              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : "/"} />
+              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : getDashboardPath()} />
             )
           }
         />
         <Route
           path="/signup"
           element={
-            !isAuthenticated ? <SignUpPage /> : <Navigate to={isOnboarded ? "/" : "/onboarding"} />
+            !isAuthenticated ? <SignUpPage /> : <Navigate to={isOnboarded ? getDashboardPath() : "/onboarding"} />
           }
         />
         <Route
           path="/login"
           element={
-            !isAuthenticated ? <LoginPage /> : <Navigate to={isOnboarded ? "/" : "/onboarding"} />
+            !isAuthenticated ? <LoginPage /> : <Navigate to={isOnboarded ? getDashboardPath() : "/onboarding"} />
           }
         />
         <Route
@@ -164,7 +180,7 @@ const App = () => {
               !isOnboarded ? (
                 <OnboardingPage />
               ) : (
-                <Navigate to="/" />
+                <Navigate to={getDashboardPath()} />
               )
             ) : (
               <Navigate to="/login" />

@@ -43,8 +43,14 @@ export const protectRole = (allowedRoles) => {
         return res.status(401).json({ message: "Unauthorized - No token provided" });
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-      console.log("🔍 protectRole middleware - decoded token:", decoded);
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        console.log("🔍 protectRole middleware - decoded token:", decoded);
+      } catch (jwtError) {
+        console.log("🔍 protectRole middleware - JWT verification failed:", jwtError.message);
+        return res.status(401).json({ message: "Unauthorized - Invalid token" });
+      }
 
       if (!decoded) {
         return res.status(401).json({ message: "Unauthorized - Invalid token" });

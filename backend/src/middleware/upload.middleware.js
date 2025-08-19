@@ -14,47 +14,28 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
   console.warn("Please add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to your .env file");
 }
 
-// Configure Cloudinary storage
-let storage;
+// Use memory storage first, then manually upload to Cloudinary
+const storage = multer.memoryStorage();
 
-if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-  storage = new CloudinaryStorage({
-    cloudinary: cloudinary.v2,
-    params: {
-      folder: "faculty-messages",
-      allowed_formats: ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx", "txt", "ppt", "pptx"],
-      transformation: [
-        { width: 1000, height: 1000, crop: "limit" }, // Limit image dimensions
-        { quality: "auto" }, // Auto-optimize quality
-      ],
-    },
-  });
-} else {
-  // Fallback to memory storage if Cloudinary is not configured
-  storage = multer.memoryStorage();
-}
-
-// File filter function
+// File filter function - allow all file types
 const fileFilter = (req, file, cb) => {
-  // Allow images
-  if (file.mimetype.startsWith("image/")) {
-    cb(null, true);
+  console.log('🔍 Upload middleware - fileFilter called with:', {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+    fieldname: file.fieldname,
+    buffer: file.buffer ? 'Buffer exists' : 'No buffer',
+    stream: file.stream ? 'Stream exists' : 'No stream'
+  });
+  
+  // Check if file size is valid
+  if (!file.size || file.size === 0) {
+    console.error('❌ File size is invalid:', file.size);
+    return cb(new Error('Invalid file size'), false);
   }
-  // Allow documents
-  else if (
-    file.mimetype === "application/pdf" ||
-    file.mimetype === "application/msword" ||
-    file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-    file.mimetype === "text/plain" ||
-    file.mimetype === "application/vnd.ms-powerpoint" ||
-    file.mimetype === "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-  ) {
-    cb(null, true);
-  }
-  // Reject other file types
-  else {
-    cb(new Error("Unsupported file type"), false);
-  }
+  
+  // Allow all file types
+  cb(null, true);
 };
 
 // Configure multer with Cloudinary storage
@@ -64,6 +45,11 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
+  // Add error handling for multer
+  onError: (error, next) => {
+    console.error('❌ Multer error:', error);
+    next(error);
+  }
 });
 
 export default upload;

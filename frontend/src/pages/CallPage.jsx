@@ -23,24 +23,60 @@ const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
 const CallPage = () => {
   const { id: callId } = useParams();
+  const navigate = useNavigate();
   const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
   const [isConnecting, setIsConnecting] = useState(true);
+  const [error, setError] = useState(null);
 
-  const { authUser, isLoading } = useAuthUser();
+  const { authUser, isLoading: authLoading } = useAuthUser();
 
-  const { data: tokenData } = useQuery({
+  const { data: tokenData, error: tokenError, isLoading: tokenLoading } = useQuery({
     queryKey: ["streamToken"],
     queryFn: getStreamToken,
     enabled: !!authUser,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   useEffect(() => {
     const initCall = async () => {
-      if (!tokenData.token || !authUser || !callId) return;
+      // Reset error state
+      setError(null);
+      
+      // Check if we have all required data
+      if (!authUser) {
+        setError("Authentication required. Please log in.");
+        setIsConnecting(false);
+        return;
+      }
+
+      if (!tokenData?.token) {
+        if (tokenError) {
+          setError("Failed to get video call token. Please try again.");
+        }
+        setIsConnecting(false);
+        return;
+      }
+
+      if (!callId) {
+        setError("Invalid call ID.");
+        setIsConnecting(false);
+        return;
+      }
+
+      if (!STREAM_API_KEY) {
+        setError("Video call service is not configured.");
+        setIsConnecting(false);
+        return;
+      }
 
       try {
-        console.log("Initializing Stream video client...");
+        console.log("Initializing Stream video client...", {
+          callId,
+          userId: authUser._id,
+          userName: authUser.fullName
+        });
 
         const user = {
           id: authUser._id,
@@ -64,20 +100,89 @@ const CallPage = () => {
         setCall(callInstance);
       } catch (error) {
         console.error("Error joining call:", error);
-        toast.error("Could not join the call. Please try again.");
+        
+        // Provide more specific error messages
+        let errorMessage = "Could not join the call. Please try again.";
+        
+        if (error.message?.includes("token")) {
+          errorMessage = "Authentication failed. Please log in again.";
+        } else if (error.message?.includes("network")) {
+          errorMessage = "Network error. Please check your connection.";
+        } else if (error.message?.includes("permission")) {
+          errorMessage = "You don't have permission to join this call.";
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsConnecting(false);
       }
     };
 
-    initCall();
-  }, [tokenData, authUser, callId]);
+    // Only initialize if we're not loading auth or token
+    if (!authLoading && !tokenLoading) {
+      initCall();
+    }
+  }, [tokenData, authUser, callId, authLoading, tokenLoading, tokenError]);
 
-  if (isLoading || isConnecting) return <PageLoader />;
+  // Show loading state while authentication or token is loading
+  if (authLoading || tokenLoading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-base-100">
+        <div className="text-center">
+          <PageLoader />
+          <p className="mt-4 text-base-content opacity-70">
+            {authLoading ? "Checking authentication..." : "Getting video call token..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-base-100">
+        <div className="card bg-error/10 p-8 text-center max-w-md">
+          <h3 className="font-semibold text-lg mb-4 text-error">Video Call Error</h3>
+          <p className="text-error-content opacity-70 mb-6">{error}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="btn btn-error btn-outline"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              className="btn btn-ghost"
+            >
+              Go Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show connecting state
+  if (isConnecting) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-base-100">
+        <div className="text-center">
+          <PageLoader />
+          <p className="mt-4 text-base-content opacity-70">Joining video call...</p>
+          <div className="mt-2 text-sm text-base-content opacity-50">
+            This may take a few moments
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-screen flex flex-col items-center justify-center">
-      <div className="relative">
+    <div className="h-screen flex flex-col items-center justify-center bg-base-100">
+      <div className="relative w-full h-full">
         {client && call ? (
           <StreamVideo client={client}>
             <StreamCall call={call}>
@@ -86,7 +191,26 @@ const CallPage = () => {
           </StreamVideo>
         ) : (
           <div className="flex items-center justify-center h-full">
-            <p>Could not initialize call. Please refresh or try again later.</p>
+            <div className="card bg-base-200 p-8 text-center">
+              <h3 className="font-semibold text-lg mb-4">Call Not Available</h3>
+              <p className="text-base-content opacity-70 mb-6">
+                Could not initialize call. Please refresh or try again later.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="btn btn-primary"
+                >
+                  Refresh
+                </button>
+                <button
+                  onClick={() => navigate("/")}
+                  className="btn btn-ghost"
+                >
+                  Go Home
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -100,7 +224,17 @@ const CallContent = () => {
 
   const navigate = useNavigate();
 
-  if (callingState === CallingState.LEFT) return navigate("/");
+  if (callingState === CallingState.LEFT) {
+    // Add a small delay before navigating to show the leaving state
+    setTimeout(() => navigate("/"), 1000);
+    return (
+      <div className="h-screen flex items-center justify-center bg-base-100">
+        <div className="text-center">
+          <p className="text-base-content opacity-70">Leaving call...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <StreamTheme>

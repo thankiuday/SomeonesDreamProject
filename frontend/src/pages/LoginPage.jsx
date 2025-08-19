@@ -40,7 +40,7 @@ const LoginPage = () => {
           <div className="mb-4 flex items-center justify-start gap-2">
             <ShipWheelIcon className="size-9 text-primary" />
             <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary  tracking-wider">
-              Streamify
+              COCOON
             </span>
           </div>
 
@@ -57,7 +57,7 @@ const LoginPage = () => {
                 <div>
                   <h2 className="text-xl font-semibold">Welcome Back</h2>
                   <p className="text-sm opacity-70">
-                    Sign in to your account to continue your language journey
+                    Sign in to your account to access emotional safety & digital protection
                   </p>
                 </div>
 
@@ -124,9 +124,9 @@ const LoginPage = () => {
             </div>
 
             <div className="text-center space-y-3 mt-6">
-              <h2 className="text-xl font-semibold">Connect with language partners worldwide</h2>
+              <h2 className="text-xl font-semibold">Emotional Safety & Digital Protection</h2>
               <p className="opacity-70">
-                Practice conversations, make friends, and improve your language skills together
+                A secure communication platform designed for every child's safety and well-being
               </p>
             </div>
           </div>

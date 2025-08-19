@@ -22,8 +22,22 @@ import {
   CheckCircleIcon,
   PlayIcon
 } from "lucide-react";
+import useVideoCallStore from "../store/useVideoCallStore";
 
 const FacultyMessaging = ({ room, onClose }) => {
+  // Debug logging for room object
+  console.log('🔍 FacultyMessaging - room object:', room);
+  console.log('🔍 FacultyMessaging - room._id:', room?._id);
+  console.log('🔍 FacultyMessaging - room type:', typeof room);
+  
+  // Global video call store
+  const { 
+    isVideoCallInProgress, 
+    canStartVideoCall,
+    startVideoCall,
+    completeVideoCall 
+  } = useVideoCallStore();
+  
   const [messageType, setMessageType] = useState("text");
   const [message, setMessage] = useState("");
   const [targetType, setTargetType] = useState("all"); // "all" or "specific"
@@ -113,8 +127,17 @@ const FacultyMessaging = ({ room, onClose }) => {
     enabled: !!room._id,
     retry: 2,
     onError: (error) => {
+      console.error('❌ Room members query error:', error);
       toast.error("Failed to load room members. Please try again.");
     }
+  });
+
+  console.log('🔍 Room members query state:', {
+    roomId: room._id,
+    loadingMembers,
+    membersError,
+    membersData,
+    membersCount: membersData?.members?.length || 0
   });
 
   const members = membersData?.members || [];
@@ -222,10 +245,10 @@ const FacultyMessaging = ({ room, onClose }) => {
       setCallTitle("");
       clearErrors();
       
-      // Open the video call in a new tab
-      if (data.callUrl) {
-        window.open(data.callUrl, '_blank');
-      }
+      // Close the modal after successful video call start
+      setTimeout(() => {
+        onClose();
+      }, 1500);
       
       if (data.totalFailed > 0) {
         toast.error(`${data.totalFailed} video call links failed to send. Check console for details.`);
@@ -233,6 +256,7 @@ const FacultyMessaging = ({ room, onClose }) => {
       }
     },
     onError: (error) => {
+      completeVideoCall(); // Reset global state on error
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.error || 
                           "Failed to start video call. Please try again.";
@@ -272,14 +296,28 @@ const FacultyMessaging = ({ room, onClose }) => {
   };
 
   const handleFileUpload = (e) => {
+    console.log('🔍 handleFileUpload called');
+    console.log('🔍 Event target files:', e.target.files);
+    
     const selectedFile = e.target.files[0];
+    console.log('🔍 Selected file:', selectedFile);
+    
     if (selectedFile) {
+      console.log('🔍 File details:', {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type
+      });
+      
       // Clear previous errors
       setValidationErrors(prev => ({ ...prev, file: undefined }));
       
       // Validate the selected file directly
       const fileErrors = validateFileOnUpload(selectedFile);
+      console.log('🔍 File validation errors:', fileErrors);
+      
       if (Object.keys(fileErrors).length > 0) {
+        console.log('❌ File validation failed:', fileErrors);
         setValidationErrors(prev => ({ ...prev, file: fileErrors.file }));
         toast.error(fileErrors.file);
         // Clear the file input
@@ -290,6 +328,7 @@ const FacultyMessaging = ({ room, onClose }) => {
       }
 
       // File is valid, set it in state
+      console.log('✅ File is valid, setting in state');
       setFile({
         file: selectedFile,
         name: selectedFile.name,
@@ -298,12 +337,24 @@ const FacultyMessaging = ({ room, onClose }) => {
       
       // Clear any existing file errors since file is now valid
       setValidationErrors(prev => ({ ...prev, file: undefined }));
+    } else {
+      console.log('❌ No file selected');
     }
   };
 
   const handleSendFile = (e) => {
     e.preventDefault();
     console.log('🔍 handleSendFile called');
+    console.log('🔍 handleSendFile - room object:', room);
+    console.log('🔍 handleSendFile - room._id:', room?._id);
+    
+    // Ensure we have a valid room ID
+    if (!room || !room._id) {
+      console.error('❌ No valid room ID found');
+      toast.error('Room information is missing. Please try again.');
+      return;
+    }
+    
     clearErrors();
     
     // Validate target selection
@@ -332,7 +383,16 @@ const FacultyMessaging = ({ room, onClose }) => {
 
     const formData = new FormData();
     formData.append('file', file.file);
-    formData.append('roomId', room._id.toString());
+    
+    // Ensure room ID is properly converted to string
+    const roomId = room._id?.toString();
+    if (!roomId) {
+      console.error('❌ Room ID is invalid');
+      toast.error('Invalid room information. Please try again.');
+      return;
+    }
+    
+    formData.append('roomId', roomId);
     if (targetType === "specific" && selectedUser) {
       formData.append('targetUserId', selectedUser.toString());
     }
@@ -373,6 +433,20 @@ const FacultyMessaging = ({ room, onClose }) => {
 
   const handleStartVideoCall = (e) => {
     e.preventDefault();
+    console.log("🎥 FacultyMessaging - Start Video Call button clicked");
+    
+    // Check if a video call is already in progress (global check)
+    if (!canStartVideoCall()) {
+      console.log("🎥 FacultyMessaging - Video call already in progress globally, ignoring click");
+      toast.error("A video call is already in progress. Please wait for it to complete.");
+      return;
+    }
+    
+    if (startingVideoCall) {
+      console.log("🎥 FacultyMessaging - Video call already in progress locally, ignoring click");
+      return;
+    }
+    
     clearErrors();
     
     // Validate target selection
@@ -382,6 +456,11 @@ const FacultyMessaging = ({ room, onClose }) => {
       toast.error("Please fix the validation errors");
       return;
     }
+
+    console.log("🎥 FacultyMessaging - Starting video call for room:", room._id);
+    
+    // Set global video call state
+    startVideoCall();
 
     const callData = {
       roomId: room._id,
@@ -874,11 +953,16 @@ const FacultyMessaging = ({ room, onClose }) => {
                 disabled={isSending}
               >
                 {startingVideoCall ? (
-                  <span className="loading loading-spinner loading-sm" />
+                  <>
+                    <span className="loading loading-spinner loading-sm mr-1" />
+                    Starting Video Call...
+                  </>
                 ) : (
-                  <PlayIcon className="size-4" />
+                  <>
+                    <PlayIcon className="size-4 mr-1" />
+                    Start Video Call & Send Link
+                  </>
                 )}
-                Start Video Call & Send Link
               </button>
             </div>
           </form>

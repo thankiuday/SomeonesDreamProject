@@ -56,18 +56,6 @@ const FacultyMessaging = ({ room, onClose }) => {
       if (file.file.size > maxSize) {
         newErrors.file = "File size must be less than 10MB";
       }
-      
-      const allowedTypes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'application/pdf', 'application/msword', 
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain', 'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      ];
-      
-      if (!allowedTypes.includes(file.file.type)) {
-        newErrors.file = "File type not supported. Please select an image, PDF, document, or presentation file.";
-      }
     }
     return newErrors;
   };
@@ -80,18 +68,6 @@ const FacultyMessaging = ({ room, onClose }) => {
       const maxSize = 10 * 1024 * 1024; // 10MB
       if (selectedFile.size > maxSize) {
         newErrors.file = "File size must be less than 10MB";
-      }
-      
-      const allowedTypes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'application/pdf', 'application/msword', 
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain', 'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      ];
-      
-      if (!allowedTypes.includes(selectedFile.type)) {
-        newErrors.file = "File type not supported. Please select an image, PDF, document, or presentation file.";
       }
     }
     return newErrors;
@@ -194,7 +170,8 @@ const FacultyMessaging = ({ room, onClose }) => {
     },
     onError: (error) => {
       console.error('❌ File upload mutation error:', error);
-      const errorMessage = error.response?.data?.message || 
+      const errorMessage = error.message || 
+                          error.response?.data?.message || 
                           error.response?.data?.error || 
                           "Failed to send file. Please try again.";
       toast.error(errorMessage);
@@ -202,6 +179,12 @@ const FacultyMessaging = ({ room, onClose }) => {
       // Clear validation errors to prevent confusion
       setValidationErrors(prev => ({ ...prev, file: undefined }));
       console.log('❌ File upload mutation failed with error:', errorMessage);
+      
+      // Clear the file input on error
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setFile(null);
     },
   });
 
@@ -706,14 +689,13 @@ const FacultyMessaging = ({ room, onClose }) => {
               <label className="label">
                 <span className="label-text font-medium">Select File:</span>
               </label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className={`file-input file-input-bordered w-full ${validationErrors.file ? 'file-input-error' : ''}`}
-                onChange={handleFileUpload}
-                accept="image/*,.pdf,.doc,.docx,.txt,.ppt,.pptx"
-                disabled={isSending}
-              />
+                             <input
+                 ref={fileInputRef}
+                 type="file"
+                 className={`file-input file-input-bordered w-full ${validationErrors.file ? 'file-input-error' : ''}`}
+                 onChange={handleFileUpload}
+                 disabled={isSending}
+               />
               {validationErrors.file && (
                 <label className="label">
                   <span className="label-text-alt text-error flex items-center gap-1">
@@ -722,11 +704,11 @@ const FacultyMessaging = ({ room, onClose }) => {
                   </span>
                 </label>
               )}
-              <label className="label">
-                <span className="label-text-alt">
-                  Supported: Images, PDFs, Documents, Presentations (Max 10MB)
-                </span>
-              </label>
+                             <label className="label">
+                 <span className="label-text-alt">
+                   All file types supported (Max 10MB)
+                 </span>
+               </label>
             </div>
 
             {file && (

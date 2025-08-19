@@ -160,7 +160,7 @@ export async function sendRoomFile(fileData) {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 30000, // 30 second timeout
+      timeout: 60000, // 60 second timeout for file uploads
     });
     
     console.log('✅ sendRoomFile success:', response.data);
@@ -169,8 +169,23 @@ export async function sendRoomFile(fileData) {
     console.error('❌ sendRoomFile error:', {
       status: error.response?.status,
       message: error.response?.data?.message,
-      error: error.message
+      error: error.message,
+      code: error.code
     });
+    
+    // Provide better error messages
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('File upload timed out. Please try again with a smaller file or check your connection.');
+    } else if (error.response?.status === 408) {
+      throw new Error('File upload timed out on the server. Please try again.');
+    } else if (error.response?.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    } else if (error.response?.status === 403) {
+      throw new Error('You do not have permission to send files to this room.');
+    } else if (error.response?.status === 413) {
+      throw new Error('File is too large. Maximum size is 10MB.');
+    }
+    
     throw error;
   }
 }

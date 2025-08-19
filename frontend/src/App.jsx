@@ -8,6 +8,10 @@ import CallPage from "./pages/CallPage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import OnboardingPage from "./pages/OnboardingPage.jsx";
 import FriendsPage from "./pages/FriendsPage.jsx";
+import FacultyDashboard from "./pages/FacultyDashboard.jsx";
+import ParentDashboard from "./pages/ParentDashboard.jsx";
+import StudentDashboard from "./pages/StudentDashboard.jsx";
+import FacultyMessagesPage from "./pages/FacultyMessagesPage.jsx";
 
 import { Toaster } from "react-hot-toast";
 
@@ -50,6 +54,58 @@ const App = () => {
               </Layout>
             ) : (
               <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+        {/* FACULTY DASHBOARD ROUTE */}
+        <Route
+          path="/faculty-dashboard"
+          element={
+            isAuthenticated && isOnboarded && authUser?.role === "faculty" ? (
+              <Layout showSidebar={true}>
+                <FacultyDashboard />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : "/"} />
+            )
+          }
+        />
+        {/* PARENT DASHBOARD ROUTE */}
+        <Route
+          path="/parent-dashboard"
+          element={
+            isAuthenticated && isOnboarded && authUser?.role === "parent" ? (
+              <Layout showSidebar={true}>
+                <ParentDashboard />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : "/"} />
+            )
+          }
+        />
+        {/* STUDENT DASHBOARD ROUTE */}
+        <Route
+          path="/student-dashboard"
+          element={
+            isAuthenticated && isOnboarded && authUser?.role === "student" ? (
+              <Layout showSidebar={true}>
+                <StudentDashboard />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : "/"} />
+            )
+          }
+        />
+        {/* FACULTY MESSAGES ROUTE */}
+        <Route
+          path="/faculty-messages"
+          element={
+            isAuthenticated && isOnboarded && authUser?.role === "student" ? (
+              <Layout showSidebar={true}>
+                <FacultyMessagesPage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : "/"} />
             )
           }
         />

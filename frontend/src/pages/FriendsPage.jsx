@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router"; // Corrected import path
-import { UsersIcon } from "lucide-react";
-
 import { getUserFriends } from "../lib/api";
+import { Link } from "react-router";
+import { UsersIcon } from "lucide-react";
 import FriendCard from "../components/FriendCard";
 import NoFriendsFound from "../components/NoFriendsFound";
 
@@ -16,7 +15,12 @@ const FriendsPage = () => {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto space-y-10">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Your Friends</h2>
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Your Friends</h2>
+            <p className="opacity-70 mt-1">
+              Connect with your accepted friends for chat and video calls
+            </p>
+          </div>
           <Link to="/notifications" className="btn btn-outline btn-sm">
             <UsersIcon className="mr-2 size-4" />
             Friend Requests

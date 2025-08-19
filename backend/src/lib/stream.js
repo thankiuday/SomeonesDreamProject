@@ -1,11 +1,15 @@
 import { StreamChat } from "stream-chat";
 import "dotenv/config";
 
-const apiKey = process.env.STEAM_API_KEY;
-const apiSecret = process.env.STEAM_API_SECRET;
+const apiKey = process.env.STREAM_API_KEY;
+const apiSecret = process.env.STREAM_API_SECRET;
+
+console.log("🔍 Stream API Key exists:", !!apiKey);
+console.log("🔍 Stream API Secret exists:", !!apiSecret);
 
 if (!apiKey || !apiSecret) {
   console.error("Stream API key or Secret is missing");
+  console.error("Please check your .env file for STREAM_API_KEY and STREAM_API_SECRET");
 }
 
 const streamClient = StreamChat.getInstance(apiKey, apiSecret);
@@ -28,3 +32,6 @@ export const generateStreamToken = (userId) => {
     console.error("Error generating Stream token:", error);
   }
 };
+
+// Export server-side client for backend-only operations (e.g., fetching messages for AI)
+export const streamServerClient = streamClient;

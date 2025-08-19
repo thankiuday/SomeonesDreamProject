@@ -1,0 +1,43 @@
+services:
+  # Backend Service
+  - type: web
+    name: streamify-backend
+    env: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: STREAM_API_KEY
+        sync: false
+      - key: STREAM_API_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://streamify-frontend.onrender.com
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+  # Frontend Service
+  - type: web
+    name: streamify-frontend
+    env: static
+    plan: starter
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://streamify-backend.onrender.com/api
+      - key: VITE_STREAM_API_KEY
+        sync: false
+    autoDeploy: true

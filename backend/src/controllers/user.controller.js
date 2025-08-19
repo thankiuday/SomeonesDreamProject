@@ -114,6 +114,42 @@ export async function acceptFriendRequest(req, res) {
   }
 }
 
+export async function removeFriend(req, res) {
+  try {
+    const { id: friendId } = req.params;
+    const currentUserId = req.user.id;
+
+    // Verify the friend exists
+    const friend = await User.findById(friendId);
+    if (!friend) {
+      return res.status(404).json({ message: "Friend not found" });
+    }
+
+    // Verify they are actually friends
+    const currentUser = await User.findById(currentUserId);
+    if (!currentUser.friends.includes(friendId)) {
+      return res.status(400).json({ message: "This user is not your friend" });
+    }
+
+    // Remove friend from both users' friends arrays
+    await User.findByIdAndUpdate(currentUserId, {
+      $pull: { friends: friendId },
+    });
+
+    await User.findByIdAndUpdate(friendId, {
+      $pull: { friends: currentUserId },
+    });
+
+    res.status(200).json({ 
+      success: true,
+      message: "Friend removed successfully" 
+    });
+  } catch (error) {
+    console.log("Error in removeFriend controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
 export async function getFriendRequests(req, res) {
   try {
     const incomingReqs = await FriendRequest.find({
@@ -155,6 +191,212 @@ export async function getFriendRequestsCount(req, res) {
     res.status(200).json({ count });
   } catch (error) {
     console.log("Error in getFriendRequestsCount controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Parent-child relationship functions
+export async function getMyChildren(req, res) {
+  try {
+    const user = await User.findById(req.user.id)
+      .select("children")
+      .populate("children", "fullName profilePic role email");
+
+    res.status(200).json(user.children || []);
+  } catch (error) {
+    console.error("Error in getMyChildren controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function linkChildToParent(req, res) {
+  try {
+    const { childEmail } = req.body;
+    const parentId = req.user.id;
+
+    // Verify the requesting user is a parent
+    if (req.user.role !== "parent") {
+      return res.status(403).json({ message: "Only parents can link children" });
+    }
+
+    // Find the child by email
+    const child = await User.findOne({ email: childEmail, role: "student" });
+    if (!child) {
+      return res.status(404).json({ message: "Student not found with this email" });
+    }
+
+    // Check if child is already linked to a parent
+    if (child.parent) {
+      return res.status(400).json({ message: "This child is already linked to a parent" });
+    }
+
+    // Link child to parent
+    await User.findByIdAndUpdate(child._id, { parent: parentId });
+    await User.findByIdAndUpdate(parentId, { $addToSet: { children: child._id } });
+
+    res.status(200).json({ message: "Child linked successfully", child });
+  } catch (error) {
+    console.error("Error in linkChildToParent controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function getChildConversations(req, res) {
+  try {
+    const { childId } = req.params;
+    const parentId = req.user.id;
+
+    // Verify the requesting user is a parent
+    if (req.user.role !== "parent") {
+      return res.status(403).json({ message: "Only parents can view child conversations" });
+    }
+
+    // Verify the child belongs to this parent
+    const parent = await User.findById(parentId).select("children");
+    if (!parent.children.includes(childId)) {
+      return res.status(403).json({ message: "You can only view conversations of your linked children" });
+    }
+
+    // Get the child's friends (these are their conversation partners)
+    const child = await User.findById(childId)
+      .select("friends")
+      .populate("friends", "fullName profilePic role email");
+
+    res.status(200).json(child.friends || []);
+  } catch (error) {
+    console.error("Error in getChildConversations controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Secure linking system functions
+export async function generateLinkCode(req, res) {
+  try {
+    const parentId = req.user.id;
+
+    // Verify the requesting user is a parent
+    if (req.user.role !== "parent") {
+      return res.status(403).json({ message: "Only parents can generate link codes" });
+    }
+
+    // Generate a unique 6-digit code
+    const generateCode = () => {
+      return Math.floor(100000 + Math.random() * 900000).toString();
+    };
+
+    // Check if code already exists and generate a new one if needed
+    let linkCode;
+    let existingParent;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    do {
+      linkCode = generateCode();
+      existingParent = await User.findOne({ 
+        linkCode, 
+        linkCodeExpires: { $gt: new Date() } 
+      });
+      attempts++;
+    } while (existingParent && attempts < maxAttempts);
+
+    if (existingParent) {
+      return res.status(500).json({ message: "Failed to generate unique link code" });
+    }
+
+    // Set expiration time (10 minutes from now)
+    const linkCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Save the code to the parent's account
+    await User.findByIdAndUpdate(parentId, {
+      linkCode,
+      linkCodeExpires,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Link code generated successfully",
+      linkCode,
+      expiresAt: linkCodeExpires,
+    });
+  } catch (error) {
+    console.error("Error in generateLinkCode controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function useLinkCode(req, res) {
+  try {
+    const { code } = req.body;
+    const studentId = req.user.id;
+
+    // Verify the requesting user is a student
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Only students can use link codes" });
+    }
+
+    // Find parent with the active link code
+    const parent = await User.findOne({
+      linkCode: code,
+      linkCodeExpires: { $gt: new Date() },
+      role: "parent",
+    });
+
+    if (!parent) {
+      return res.status(404).json({ message: "Invalid or expired link code" });
+    }
+
+    // Check if student is already linked to a parent
+    const student = await User.findById(studentId);
+    if (student.parent) {
+      return res.status(400).json({ message: "You are already linked to a parent" });
+    }
+
+    // Check if parent already has this student as a child
+    if (parent.children.includes(studentId)) {
+      return res.status(400).json({ message: "You are already linked to this parent" });
+    }
+
+    // Establish two-way link
+    await User.findByIdAndUpdate(studentId, {
+      parent: parent._id,
+      $addToSet: { linkedAccounts: parent._id },
+    });
+
+    await User.findByIdAndUpdate(parent._id, {
+      $addToSet: { 
+        children: studentId,
+        linkedAccounts: studentId,
+      },
+      // Clear the used link code
+      linkCode: null,
+      linkCodeExpires: null,
+    });
+
+    // Get updated parent info for response
+    const updatedParent = await User.findById(parent._id).select("fullName email");
+
+    res.status(200).json({
+      success: true,
+      message: "Successfully linked to parent",
+      parent: updatedParent,
+    });
+  } catch (error) {
+    console.error("Error in useLinkCode controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function getLinkedAccounts(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId)
+      .select("linkedAccounts")
+      .populate("linkedAccounts", "fullName email role profilePic");
+
+    res.status(200).json(user.linkedAccounts || []);
+  } catch (error) {
+    console.error("Error in getLinkedAccounts controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

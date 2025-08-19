@@ -41,12 +41,43 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    role: {
+      type: String,
+      enum: ['student', 'parent', 'faculty', 'admin'],
+      default: 'student',
+    },
     friends: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
       },
     ],
+    // Parent-child relationships
+    parent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    children: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    // Secure linking system
+    linkedAccounts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    linkCode: {
+      type: String,
+      default: null,
+    },
+    linkCodeExpires: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -3,35 +3,26 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 
 export async function signup(req, res) {
-  const { email, password, fullName } = req.body;
+  const { email, password, fullName, role } = req.body;
 
   try {
-    if (!email || !password || !fullName) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters" });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
-    }
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email already exists, please use a diffrent one" });
+      return res.status(400).json({ message: "Email already exists, please use a different one" });
     }
 
     const idx = Math.floor(Math.random() * 100) + 1; // generate a num between 1-100
     const randomAvatar = `https://avatar.iran.liara.run/public/${idx}.png`;
 
+    // Validate role if provided
+    const validRoles = ['student', 'parent', 'faculty', 'admin'];
+    const userRole = role && validRoles.includes(role) ? role : 'student';
+
     const newUser = await User.create({
       email,
       fullName,
       password,
+      role: userRole,
       profilePic: randomAvatar,
     });
 
@@ -68,10 +59,6 @@ export async function login(req, res) {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: "Invalid email or password" });
 
@@ -104,21 +91,7 @@ export function logout(req, res) {
 export async function onboard(req, res) {
   try {
     const userId = req.user._id;
-
     const { fullName, bio, nativeLanguage, learningLanguage, location } = req.body;
-
-    if (!fullName || !bio || !nativeLanguage || !learningLanguage || !location) {
-      return res.status(400).json({
-        message: "All fields are required",
-        missingFields: [
-          !fullName && "fullName",
-          !bio && "bio",
-          !nativeLanguage && "nativeLanguage",
-          !learningLanguage && "learningLanguage",
-          !location && "location",
-        ].filter(Boolean),
-      });
-    }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,

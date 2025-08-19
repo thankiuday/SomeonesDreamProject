@@ -9,6 +9,7 @@ const SignUpPage = () => {
     fullName: "",
     email: "",
     password: "",
+    role: "student", // Default role
   });
 
   // This is how we did it at first, without using our custom hook
@@ -42,14 +43,31 @@ const SignUpPage = () => {
           <div className="mb-4 flex items-center justify-start gap-2">
             <ShipWheelIcon className="size-9 text-primary" />
             <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
-              Streamify
+              COCOON
             </span>
           </div>
 
           {/* ERROR MESSAGE IF ANY */}
           {error && (
             <div className="alert alert-error mb-4">
-              <span>{error.response.data.message}</span>
+              <div>
+                <h4 className="font-bold">Signup Failed</h4>
+                <div className="text-sm">
+                  {error.response?.data?.message && (
+                    <p className="mb-2">{error.response.data.message}</p>
+                  )}
+                  {error.response?.data?.errors && (
+                    <ul className="list-disc list-inside space-y-1">
+                      {error.response.data.errors.map((err, index) => (
+                        <li key={index}>
+                          <strong>{err.field}:</strong> {err.message}
+                          {err.value && <span className="text-xs opacity-70"> (Value: {err.value})</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -59,7 +77,7 @@ const SignUpPage = () => {
                 <div>
                   <h2 className="text-xl font-semibold">Create an Account</h2>
                   <p className="text-sm opacity-70">
-                    Join Streamify and start your language learning adventure!
+                    Join COCOON - Emotional Safety & Digital Protection for Every Child
                   </p>
                 </div>
 
@@ -106,7 +124,28 @@ const SignUpPage = () => {
                       required
                     />
                     <p className="text-xs opacity-70 mt-1">
-                      Password must be at least 6 characters long
+                      Password must be at least 6 characters long and contain at least one letter and one number
+                    </p>
+                  </div>
+
+                  {/* ROLE SELECTION */}
+                  <div className="form-control w-full">
+                    <label className="label">
+                      <span className="label-text">I am a...</span>
+                    </label>
+                    <select
+                      className="select select-bordered w-full"
+                      value={signupData.role}
+                      onChange={(e) => setSignupData({ ...signupData, role: e.target.value })}
+                      required
+                    >
+                      <option value="student">Student</option>
+                      <option value="parent">Parent</option>
+                      <option value="faculty">Faculty/Teacher</option>
+                      <option value="admin">Administrator</option>
+                    </select>
+                    <p className="text-xs opacity-70 mt-1">
+                      Select your role to access the appropriate features
                     </p>
                   </div>
 
@@ -155,9 +194,9 @@ const SignUpPage = () => {
             </div>
 
             <div className="text-center space-y-3 mt-6">
-              <h2 className="text-xl font-semibold">Connect with language partners worldwide</h2>
+              <h2 className="text-xl font-semibold">Safe Communication for Children</h2>
               <p className="opacity-70">
-                Practice conversations, make friends, and improve your language skills together
+                AI-powered monitoring, secure parent-child linking, and protected digital interactions
               </p>
             </div>
           </div>

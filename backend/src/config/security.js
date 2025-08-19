@@ -6,25 +6,25 @@ export const securityConfig = {
     // General rate limit for all routes
     general: {
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: process.env.NODE_ENV === "development" ? 1000 : 100, // Higher limit for development
+      max: process.env.NODE_ENV === "development" ? 1000 : 500, // Increased for production
       message: "Too many requests from this IP, please try again later.",
       standardHeaders: true,
       legacyHeaders: false,
     },
     
-    // Stricter rate limit for authentication endpoints
+    // Rate limit for authentication endpoints
     auth: {
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: process.env.NODE_ENV === "development" ? 100 : 5, // Higher limit for development
+      max: process.env.NODE_ENV === "development" ? 100 : 50, // Increased for production
       message: "Too many authentication attempts, please try again later.",
       standardHeaders: true,
       legacyHeaders: false,
     },
     
-    // Very strict rate limit for link code endpoints
+    // Rate limit for link code endpoints
     linkCode: {
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: process.env.NODE_ENV === "development" ? 50 : 3, // Higher limit for development
+      max: process.env.NODE_ENV === "development" ? 50 : 20, // Increased for production
       message: "Too many link code attempts, please try again later.",
       standardHeaders: true,
       legacyHeaders: false,

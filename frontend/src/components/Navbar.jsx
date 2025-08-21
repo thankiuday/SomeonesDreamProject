@@ -9,8 +9,27 @@ const Navbar = () => {
   const { authUser } = useAuthUser();
   const location = useLocation();
   const isChatPage = location.pathname?.startsWith("/chat");
-  const { logoutMutation } = useLogout();
+  const { logoutMutation, forceLogout, isPending } = useLogout();
   const { count } = useNotificationCount();
+
+  const handleLogout = () => {
+    console.log("🔘 Logout button clicked");
+    
+    // Use a timeout to ensure logout happens even if API is slow
+    const timeoutId = setTimeout(() => {
+      console.log("⏰ Logout timeout - forcing logout");
+      forceLogout();
+    }, 2000); // 2 second timeout
+    
+    logoutMutation(undefined, {
+      onSuccess: () => {
+        clearTimeout(timeoutId);
+      },
+      onError: () => {
+        clearTimeout(timeoutId);
+      }
+    });
+  };
 
   return (
     <nav className="bg-base-200 border-b border-base-300 sticky top-0 z-30 h-16 flex items-center">
@@ -48,7 +67,12 @@ const Navbar = () => {
             </div>
           </div>
 
-          <button className="btn btn-ghost btn-circle" onClick={logoutMutation}>
+          <button 
+            className="btn btn-ghost btn-circle" 
+            onClick={handleLogout}
+            disabled={isPending}
+            title="Logout"
+          >
             <LogOutIcon className="h-6 w-6 text-base-content opacity-70" />
           </button>
         </div>

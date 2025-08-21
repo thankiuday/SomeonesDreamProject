@@ -21,10 +21,9 @@ import Layout from "./components/Layout.jsx";
 import { useThemeStore } from "./store/useThemeStore.js";
 
 const App = () => {
-  const { isLoading, authUser } = useAuthUser();
+  const { isLoading, authUser, isAuthenticated, error } = useAuthUser();
   const { theme } = useThemeStore();
 
-  const isAuthenticated = Boolean(authUser);
   const isOnboarded = authUser?.isOnboarded;
 
   // Helper function to get the appropriate dashboard path based on user role
@@ -42,6 +41,14 @@ const App = () => {
         return "/";
     }
   };
+
+  // Debug logging
+  console.log("App.jsx - isLoading:", isLoading);
+  console.log("App.jsx - authUser:", authUser);
+  console.log("App.jsx - isAuthenticated:", isAuthenticated);
+  console.log("App.jsx - isOnboarded:", isOnboarded);
+  console.log("App.jsx - error:", error);
+  console.log("App.jsx - current pathname:", window.location.pathname);
 
   if (isLoading) return <PageLoader />;
 

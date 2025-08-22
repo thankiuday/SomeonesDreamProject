@@ -184,22 +184,6 @@ export const validateAnalyzeChat = [
   handleValidationErrors
 ];
 
-// Chat validation chains (for future use)
-export const validateSendMessage = [
-  body("content")
-    .trim()
-    .isLength({ min: 1, max: 1000 })
-    .withMessage("Message content must be between 1 and 1000 characters"),
-  body("recipientId")
-    .isMongoId()
-    .withMessage("Invalid recipient ID format"),
-  body("messageType")
-    .optional()
-    .isIn(["text", "image", "file", "system"])
-    .withMessage("Invalid message type"),
-  handleValidationErrors
-];
-
 // General validation for MongoDB ObjectIds
 export const validateObjectId = [
   param("id")

@@ -12,13 +12,46 @@ export const handleValidationErrors = (req, res, next) => {
       errors: errors.array()
     });
     
+    // Group errors by field for better user experience
+    const fieldErrors = {};
+    const generalErrors = [];
+    
+    errors.array().forEach(error => {
+      if (error.path) {
+        // Field-specific error
+        if (!fieldErrors[error.path]) {
+          fieldErrors[error.path] = [];
+        }
+        fieldErrors[error.path].push(error.msg);
+      } else {
+        // General error
+        generalErrors.push(error.msg);
+      }
+    });
+    
+    // Create user-friendly error message
+    let userMessage = "Please fix the following issues:";
+    if (Object.keys(fieldErrors).length > 0) {
+      userMessage += "\n\n";
+      Object.entries(fieldErrors).forEach(([field, messages]) => {
+        const fieldName = field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        userMessage += `• ${fieldName}: ${messages.join(', ')}\n`;
+      });
+    }
+    
+    if (generalErrors.length > 0) {
+      userMessage += "\n" + generalErrors.join('\n');
+    }
+    
     return res.status(400).json({
       message: "Validation failed",
+      userMessage: userMessage.trim(),
       errors: errors.array().map(error => ({
         field: error.path,
         message: error.msg,
         value: error.value
-      }))
+      })),
+      fieldErrors: fieldErrors
     });
   }
   next();
@@ -66,26 +99,82 @@ export const validateOnboarding = [
     .withMessage("Full name must be between 2 and 50 characters")
     .matches(/^[a-zA-Z\s]+$/)
     .withMessage("Full name can only contain letters and spaces"),
-  body("bio")
-    .trim()
-    .isLength({ min: 10, max: 500 })
-    .withMessage("Bio must be between 10 and 500 characters"),
-  body("nativeLanguage")
-    .trim()
-    .isLength({ min: 2, max: 20 })
-    .withMessage("Native language must be between 2 and 20 characters")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("Native language can only contain letters and spaces"),
-  body("learningLanguage")
-    .trim()
-    .isLength({ min: 2, max: 20 })
-    .withMessage("Learning language must be between 2 and 20 characters")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("Learning language can only contain letters and spaces"),
-  body("location")
+  body("age")
+    .optional()
+    .isInt({ min: 5, max: 18 })
+    .withMessage("Age must be between 5 and 18"),
+  body("grade")
+    .optional()
+    .isIn(["kindergarten", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "college"])
+    .withMessage("Invalid grade level"),
+  body("school")
+    .optional()
     .trim()
     .isLength({ min: 2, max: 100 })
-    .withMessage("Location must be between 2 and 100 characters"),
+    .withMessage("School name must be between 2 and 100 characters"),
+  body("profilePic")
+    .optional()
+    .isURL()
+    .withMessage("Profile picture must be a valid URL"),
+  body("safetyLevel")
+    .optional()
+    .isIn(["strict", "moderate", "relaxed"])
+    .withMessage("Safety level must be strict, moderate, or relaxed"),
+  body("communicationPreferences")
+    .optional()
+    .isObject()
+    .withMessage("Communication preferences must be an object"),
+  body("communicationPreferences.allowDirectMessages")
+    .optional()
+    .isBoolean()
+    .withMessage("Allow direct messages must be a boolean"),
+  body("communicationPreferences.allowGroupChats")
+    .optional()
+    .isBoolean()
+    .withMessage("Allow group chats must be a boolean"),
+  body("monitoringSettings")
+    .optional()
+    .isObject()
+    .withMessage("Monitoring settings must be an object"),
+  body("emergencyContact")
+    .optional()
+    .isObject()
+    .withMessage("Emergency contact must be an object"),
+  body("emergencyContact.name")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Emergency contact name must be between 2 and 50 characters"),
+  body("emergencyContact.relationship")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 30 })
+    .withMessage("Emergency contact relationship must be between 2 and 30 characters"),
+  body("emergencyContact.phone")
+    .optional()
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .withMessage("Emergency contact phone must be between 10 and 20 characters"),
+  body("emergencyContact.email")
+    .optional()
+    .isEmail()
+    .withMessage("Emergency contact email must be a valid email"),
+  body("academicSubjects")
+    .optional()
+    .isArray()
+    .withMessage("Academic subjects must be an array"),
+  body("interests")
+    .optional()
+    .isArray()
+    .withMessage("Interests must be an array"),
+  body("dailyScreenTimeLimit")
+    .optional()
+    .isInt({ min: 30, max: 480 })
+    .withMessage("Daily screen time limit must be between 30 and 480 minutes"),
+  body("preferredStudyTimes")
+    .optional()
+    .isArray()
+    .withMessage("Preferred study times must be an array"),
   handleValidationErrors
 ];
 
@@ -166,22 +255,6 @@ export const validateAnalyzeChat = [
   handleValidationErrors
 ];
 
-// Chat validation chains (for future use)
-export const validateSendMessage = [
-  body("content")
-    .trim()
-    .isLength({ min: 1, max: 1000 })
-    .withMessage("Message content must be between 1 and 1000 characters"),
-  body("recipientId")
-    .isMongoId()
-    .withMessage("Invalid recipient ID format"),
-  body("messageType")
-    .optional()
-    .isIn(["text", "image", "file", "system"])
-    .withMessage("Invalid message type"),
-  handleValidationErrors
-];
-
 // General validation for MongoDB ObjectIds
 export const validateObjectId = [
   param("id")
@@ -195,6 +268,16 @@ export const validateRoomId = [
   param("roomId")
     .isMongoId()
     .withMessage("Invalid room ID format"),
+  handleValidationErrors
+];
+
+export const validateBulkDeleteRooms = [
+  body("roomIds")
+    .isArray({ min: 1 })
+    .withMessage("roomIds must be a non-empty array"),
+  body("roomIds.*")
+    .isMongoId()
+    .withMessage("Each room ID must be a valid MongoDB ObjectId"),
   handleValidationErrors
 ];
 

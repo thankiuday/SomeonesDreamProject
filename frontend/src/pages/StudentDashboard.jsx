@@ -85,7 +85,7 @@ const StudentDashboard = () => {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-between gap-4 text-center sm:text-left">
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Student Dashboard</h1>
             <p className="text-base-content opacity-70 mt-2">

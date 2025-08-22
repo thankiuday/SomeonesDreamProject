@@ -41,9 +41,28 @@ export async function analyzeChat(req, res) {
       targetRole: targetUser.role
     });
 
-    // TODO: Add parent-child relationship verification when you implement that feature
-    // For now, we'll allow any parent to analyze any child's chats
-    // In production, you should verify the parent-child relationship
+    // Verify parent-child relationship
+    const parent = await User.findById(parentId).select("children");
+    if (!parent.children.includes(childUid)) {
+      return res.status(403).json({ 
+        message: "You can only analyze conversations of your linked children" 
+      });
+    }
+
+    // Determine conversation type and context
+    const isFriend = child.friends.includes(targetUid);
+    const Room = (await import("../models/Room.js")).default;
+    const sharedRooms = await Room.find({
+      members: { $all: [childUid, targetUid] }
+    });
+    const isClassroomMember = sharedRooms.length > 0;
+
+    console.log('📊 Conversation context:', {
+      isFriend,
+      isClassroomMember,
+      sharedRooms: sharedRooms.length,
+      targetRole: targetUser.role
+    });
 
     // Try fetching messages directly from Stream Chat (preferred)
     const channelId = [childUid.toString(), targetUid.toString()].sort().join("-");
@@ -85,8 +104,15 @@ export async function analyzeChat(req, res) {
       const totalMessages = await Message.countDocuments();
       console.log('📊 Total messages in database:', totalMessages);
 
-      // Return a sample analysis for testing purposes
-      const sampleAnalysis = "The child appears to be engaging in positive, educational conversations. The interaction shows healthy communication patterns with appropriate topics for their age. The child demonstrates good social skills and appears to be in a positive emotional state. No concerning behavior patterns were detected in this conversation.";
+      // Return a contextual analysis based on relationship type
+      let sampleAnalysis = "";
+      if (isFriend) {
+        sampleAnalysis = `Your child ${child.fullName} is friends with ${targetUser.fullName} (${targetUser.role}). While no messages were found in this conversation, this friendship appears to be a positive social connection. The child demonstrates good social skills by maintaining friendships.`;
+      } else if (isClassroomMember) {
+        sampleAnalysis = `Your child ${child.fullName} shares a classroom with ${targetUser.fullName} (${targetUser.role}). This is an educational relationship that provides opportunities for collaborative learning and academic growth. No direct messages were found between them.`;
+      } else {
+        sampleAnalysis = `Your child ${child.fullName} has a connection with ${targetUser.fullName} (${targetUser.role}). While no direct messages were found, this could be a new acquaintance or someone they've interacted with in other contexts.`;
+      }
       
       return res.status(200).json({
         success: true,
@@ -96,8 +122,11 @@ export async function analyzeChat(req, res) {
           targetName: targetUser.fullName,
           targetRole: targetUser.role,
           messageCount: 0,
+          isFriend,
+          isClassroomMember,
+          sharedRooms: sharedRooms.length,
           totalMessagesInDatabase: totalMessages,
-          note: "This is a sample analysis since no actual messages were found. Messages may not be synced from Stream Chat yet."
+          note: "This is a contextual analysis since no actual messages were found. Messages may not be synced from Stream Chat yet."
         }
       });
     }
@@ -134,55 +163,72 @@ export async function analyzeChat(req, res) {
 
     console.log('📝 Formatted transcript length:', transcript.length);
 
-    // Call OpenAI API
+    // Create context-aware prompt for AI analysis
+    const conversationContext = {
+      childName: child.fullName,
+      childRole: child.role,
+      targetName: targetUser.fullName,
+      targetRole: targetUser.role,
+      isFriend,
+      isClassroomMember,
+      messageCount: usingStream ? streamMessages.length : mongoMessages.length
+    };
+
+    const contextPrompt = `
+Context: This is a conversation between ${child.fullName} (${child.role}) and ${targetUser.fullName} (${targetUser.role}).
+Relationship: ${isFriend ? 'Friends' : isClassroomMember ? 'Classroom members' : 'Acquaintances'}
+Message count: ${conversationContext.messageCount}
+`;
+
+    // Call OpenAI API with enhanced prompt
     const openaiResponse = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
-        model: "gpt-4o",
+        model: "gpt-3.5-turbo",
         messages: [
           {
             role: "system",
-            content: "You are an AI assistant trained in child psychology and online safety. Your task is to analyze a chat conversation involving a child and provide a concise, easy-to-understand summary for their parent. Analyze the following transcript and determine the child's overall mental and emotional state. Specifically, look for signs of sadness, bullying, or grooming. Based on your analysis, provide a one-paragraph summary starting with a clear conclusion, like 'The child seems to be doing well,' or 'There are potential concerns.' Do not quote messages directly."
+            content: `You are a child safety and communication expert. Analyze this conversation between a child and another person. Consider the context, relationship type, and provide insights about:
+1. Communication patterns and social skills
+2. Emotional well-being and behavior
+3. Safety concerns or red flags
+4. Educational value (if applicable)
+5. Overall assessment of the interaction
+
+Be thorough but concise. Focus on actionable insights for parents.`
           },
           {
             role: "user",
-            content: transcript
+            content: `${contextPrompt}\n\nConversation transcript:\n${transcript}`
           }
         ],
         max_tokens: 500,
-        temperature: 0.3
+        temperature: 0.3,
       },
       {
         headers: {
           "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
     const analysis = openaiResponse.data.choices[0].message.content;
 
+    console.log('✅ AI analysis completed successfully');
+
     res.status(200).json({
       success: true,
       analysis,
       context: {
-        childName: child.fullName,
-        targetName: targetUser.fullName,
-        targetRole: targetUser.role,
-        messageCount: usingStream ? streamMessages.length : mongoMessages.length,
-        conversationDuration: null
+        ...conversationContext,
+        source: usingStream ? "stream" : "mongo",
+        transcriptLength: transcript.length
       }
     });
 
   } catch (error) {
-    console.error("Error in analyzeChat controller:", error.message);
-    
-    if (error.response?.status === 401) {
-      return res.status(500).json({ 
-        message: "OpenAI API key is invalid or missing. Please check your environment variables." 
-      });
-    }
-    
+    console.error("Error in analyzeChat controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

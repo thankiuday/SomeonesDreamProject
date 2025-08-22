@@ -48,18 +48,18 @@ const NotificationsPage = () => {
                       className="card bg-base-200 shadow-sm hover:shadow-md transition-shadow"
                     >
                       <div className="card-body p-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="avatar w-14 h-14 rounded-full bg-base-300">
+                            <div className="avatar w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-base-300">
                               <img src={request.sender.profilePic} alt={request.sender.fullName} />
                             </div>
                             <div>
-                              <h3 className="font-semibold">{request.sender.fullName}</h3>
-                              <div className="flex flex-wrap gap-1.5 mt-1">
-                                <span className="badge badge-secondary badge-sm">
+                              <h3 className="font-semibold text-sm sm:text-base">{request.sender.fullName}</h3>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                <span className="badge badge-secondary badge-xs sm:badge-sm">
                                   Native: {request.sender.nativeLanguage}
                                 </span>
-                                <span className="badge badge-outline badge-sm">
+                                <span className="badge badge-outline badge-xs sm:badge-sm">
                                   Learning: {request.sender.learningLanguage}
                                 </span>
                               </div>
@@ -67,7 +67,7 @@ const NotificationsPage = () => {
                           </div>
 
                           <button
-                            className="btn btn-primary btn-sm"
+                            className="btn btn-primary btn-sm w-full sm:w-auto"
                             onClick={() => acceptRequestMutation(request._id)}
                             disabled={isPending}
                           >
@@ -94,15 +94,15 @@ const NotificationsPage = () => {
                     <div key={notification._id} className="card bg-base-200 shadow-sm">
                       <div className="card-body p-4">
                         <div className="flex items-start gap-3">
-                          <div className="avatar mt-1 size-10 rounded-full">
+                          <div className="avatar mt-1 size-8 sm:size-10 rounded-full">
                             <img
                               src={notification.recipient.profilePic}
                               alt={notification.recipient.fullName}
                             />
                           </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{notification.recipient.fullName}</h3>
-                            <p className="text-sm my-1">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm sm:text-base">{notification.recipient.fullName}</h3>
+                            <p className="text-xs sm:text-sm my-1">
                               {notification.recipient.fullName} accepted your friend request
                             </p>
                             <p className="text-xs flex items-center opacity-70">
@@ -110,9 +110,10 @@ const NotificationsPage = () => {
                               Recently
                             </p>
                           </div>
-                          <div className="badge badge-success">
+                          <div className="badge badge-success badge-sm">
                             <MessageSquareIcon className="h-3 w-3 mr-1" />
-                            New Friend
+                            <span className="hidden sm:inline">New Friend</span>
+                            <span className="sm:hidden">Friend</span>
                           </div>
                         </div>
                       </div>

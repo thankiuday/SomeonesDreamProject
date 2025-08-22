@@ -3,183 +3,464 @@ import useAuthUser from "../hooks/useAuthUser";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { completeOnboarding } from "../lib/api";
-import { LoaderIcon, MapPinIcon, ShipWheelIcon, ShuffleIcon } from "lucide-react";
-import { LANGUAGES } from "../constants";
+import { 
+  LoaderIcon, 
+  ShuffleIcon, 
+  ShieldIcon, 
+  GraduationCapIcon, 
+  UsersIcon,
+  CameraIcon
+} from "lucide-react";
+import Logo from "../components/Logo";
 
 const OnboardingPage = () => {
   const { authUser } = useAuthUser();
   const queryClient = useQueryClient();
 
   const [formState, setFormState] = useState({
+    // Essential Basic Information
     fullName: authUser?.fullName || "",
-    bio: authUser?.bio || "",
-    nativeLanguage: authUser?.nativeLanguage || "",
-    learningLanguage: authUser?.learningLanguage || "",
-    location: authUser?.location || "",
+    age: "",
+    grade: "",
+    school: "",
     profilePic: authUser?.profilePic || "",
+    
+    // Essential Safety Settings
+    safetyLevel: "moderate",
+    allowDirectMessages: true,
+    allowGroupChats: true,
+    
+    // Essential Emergency Contact
+    emergencyContactName: "",
+    emergencyContactPhone: "",
+    emergencyContactRelationship: "",
+    emergencyContactEmail: "",
   });
+
+  const [validationErrors, setValidationErrors] = useState({});
 
   const { mutate: onboardingMutation, isPending } = useMutation({
     mutationFn: completeOnboarding,
     onSuccess: () => {
-      toast.success("Profile onboarded successfully");
+      toast.success("COCOON profile setup completed!");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      setValidationErrors({}); // Clear any previous errors
     },
-
     onError: (error) => {
-      toast.error(error.response.data.message);
+      if (error.response?.data?.fieldErrors) {
+        // Set field-specific validation errors
+        setValidationErrors(error.response.data.fieldErrors);
+        
+        // Show user-friendly message
+        if (error.response.data.userMessage) {
+          toast.error("Please fix the validation errors below");
+        }
+      } else {
+        toast.error(error.response?.data?.message || "Setup failed");
+        setValidationErrors({});
+      }
     },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Clear previous validation errors
+    setValidationErrors({});
+    
+    // Client-side validation for required fields
+    const clientErrors = {};
+    
+    if (!formState.fullName.trim()) {
+      clientErrors.fullName = ["Full name is required"];
+    }
+    
+    if (!formState.emergencyContactName.trim()) {
+      clientErrors.emergencyContactName = ["Emergency contact name is required"];
+    }
+    
+    if (!formState.emergencyContactPhone.trim()) {
+      clientErrors.emergencyContactPhone = ["Emergency contact phone is required"];
+    }
+    
+    // Email is optional but if provided, should be valid
+    if (formState.emergencyContactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.emergencyContactEmail)) {
+      clientErrors.emergencyContactEmail = ["Please provide a valid email address"];
+    }
+    
+    if (Object.keys(clientErrors).length > 0) {
+      setValidationErrors(clientErrors);
+      toast.error("Please fill in all required fields");
+      return;
+    }
 
-    onboardingMutation(formState);
+    // Transform data for backend
+    const onboardingData = {
+      fullName: formState.fullName,
+      age: formState.age ? parseInt(formState.age) : null,
+      grade: formState.grade,
+      school: formState.school,
+      profilePic: formState.profilePic,
+      
+      // Safety settings
+      safetyLevel: formState.safetyLevel,
+      communicationPreferences: {
+        allowDirectMessages: formState.allowDirectMessages,
+        allowGroupChats: formState.allowGroupChats,
+        allowFileSharing: false,
+        allowVideoCalls: false,
+      },
+      
+      // Monitoring settings (defaults)
+      monitoringSettings: {
+        aiAnalysisEnabled: true,
+        realTimeAlerts: true,
+        weeklyReports: true,
+        contentFiltering: true,
+      },
+      
+      // Emergency contact
+      emergencyContact: {
+        name: formState.emergencyContactName,
+        relationship: formState.emergencyContactRelationship,
+        phone: formState.emergencyContactPhone,
+        email: formState.emergencyContactEmail,
+      },
+      
+      // Default educational settings
+      academicSubjects: [],
+      interests: [],
+      dailyScreenTimeLimit: 120,
+      preferredStudyTimes: ["afternoon", "evening"],
+    };
+
+    onboardingMutation(onboardingData);
   };
 
   const handleRandomAvatar = () => {
-    const idx = Math.floor(Math.random() * 100) + 1; // 1-100 included
+    const idx = Math.floor(Math.random() * 100) + 1;
     const randomAvatar = `https://avatar.iran.liara.run/public/${idx}.png`;
-
     setFormState({ ...formState, profilePic: randomAvatar });
-    toast.success("Random profile picture generated!");
+    toast.success("Random avatar generated!");
+  };
+
+  // Helper function to get field errors
+  const getFieldError = (fieldName) => {
+    return validationErrors[fieldName] || [];
+  };
+
+  // Helper function to check if field has error
+  const hasFieldError = (fieldName) => {
+    return validationErrors[fieldName] && validationErrors[fieldName].length > 0;
   };
 
   return (
     <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
-      <div className="card bg-base-200 w-full max-w-3xl shadow-xl">
+      <div className="card bg-base-200 w-full max-w-2xl shadow-xl">
         <div className="card-body p-6 sm:p-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6">Complete Your Profile</h1>
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto mb-4 bg-primary rounded-full flex items-center justify-center">
+              <ShieldIcon className="size-8 text-primary-content" />
+            </div>
+            <h1 className="text-3xl font-bold">COCOON Setup</h1>
+            <p className="text-base-content opacity-70 mt-2">
+              Quick setup for safe online learning and communication
+            </p>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* PROFILE PIC CONTAINER */}
+            {/* Validation Error Summary */}
+            {Object.keys(validationErrors).length > 0 && (
+              <div className="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h3 className="font-bold">Please fix the following errors:</h3>
+                  <div className="text-sm">
+                    {Object.entries(validationErrors).map(([field, errors]) => (
+                      <div key={field} className="mt-1">
+                        <strong>{field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong> {errors.join(', ')}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Profile Picture */}
             <div className="flex flex-col items-center justify-center space-y-4">
-              {/* IMAGE PREVIEW */}
-              <div className="size-32 rounded-full bg-base-300 overflow-hidden">
+              <div className="size-24 rounded-full bg-base-300 overflow-hidden">
                 {formState.profilePic ? (
-                  <img
-                    src={formState.profilePic}
-                    alt="Profile Preview"
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={formState.profilePic} alt="Profile Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex items-center justify-center h-full">
-                    <CameraIcon className="size-12 text-base-content opacity-40" />
+                    <CameraIcon className="size-8 text-base-content opacity-40" />
                   </div>
                 )}
               </div>
-
-              {/* Generate Random Avatar BTN */}
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={handleRandomAvatar} className="btn btn-accent">
-                  <ShuffleIcon className="size-4 mr-2" />
-                  Generate Random Avatar
-                </button>
-              </div>
+              <button type="button" onClick={handleRandomAvatar} className="btn btn-sm btn-accent">
+                <ShuffleIcon className="size-4 mr-2" />
+                Generate Avatar
+              </button>
             </div>
 
-            {/* FULL NAME */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Full Name</span>
-              </label>
-              <input
-                type="text"
-                name="fullName"
-                value={formState.fullName}
-                onChange={(e) => setFormState({ ...formState, fullName: e.target.value })}
-                className="input input-bordered w-full"
-                placeholder="Your full name"
-              />
-            </div>
-
-            {/* BIO */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Bio</span>
-              </label>
-              <textarea
-                name="bio"
-                value={formState.bio}
-                onChange={(e) => setFormState({ ...formState, bio: e.target.value })}
-                className="textarea textarea-bordered h-24"
-                placeholder="Tell others about yourself and your language learning goals"
-              />
-            </div>
-
-            {/* LANGUAGES */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* NATIVE LANGUAGE */}
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <GraduationCapIcon className="size-5 text-secondary" />
+                Basic Information
+              </h3>
+              
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Native Language</span>
+                  <span className="label-text">Full Name *</span>
                 </label>
-                <select
-                  name="nativeLanguage"
-                  value={formState.nativeLanguage}
-                  onChange={(e) => setFormState({ ...formState, nativeLanguage: e.target.value })}
-                  className="select select-bordered w-full"
-                >
-                  <option value="">Select your native language</option>
-                  {LANGUAGES.map((lang) => (
-                    <option key={`native-${lang}`} value={lang.toLowerCase()}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* LEARNING LANGUAGE */}
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Learning Language</span>
-                </label>
-                <select
-                  name="learningLanguage"
-                  value={formState.learningLanguage}
-                  onChange={(e) => setFormState({ ...formState, learningLanguage: e.target.value })}
-                  className="select select-bordered w-full"
-                >
-                  <option value="">Select language you're learning</option>
-                  {LANGUAGES.map((lang) => (
-                    <option key={`learning-${lang}`} value={lang.toLowerCase()}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* LOCATION */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Location</span>
-              </label>
-              <div className="relative">
-                <MapPinIcon className="absolute top-1/2 transform -translate-y-1/2 left-3 size-5 text-base-content opacity-70" />
                 <input
                   type="text"
-                  name="location"
-                  value={formState.location}
-                  onChange={(e) => setFormState({ ...formState, location: e.target.value })}
-                  className="input input-bordered w-full pl-10"
-                  placeholder="City, Country"
+                  value={formState.fullName}
+                  onChange={(e) => setFormState({ ...formState, fullName: e.target.value })}
+                  className={`input input-bordered w-full ${hasFieldError('fullName') ? 'input-error' : ''}`}
+                  placeholder="Your full name"
+                  required
                 />
+                {hasFieldError('fullName') && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{getFieldError('fullName').join(', ')}</span>
+                  </label>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Age</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="18"
+                    value={formState.age}
+                    onChange={(e) => setFormState({ ...formState, age: e.target.value })}
+                    className={`input input-bordered w-full ${hasFieldError('age') ? 'input-error' : ''}`}
+                    placeholder="Your age"
+                  />
+                  {hasFieldError('age') && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">{getFieldError('age').join(', ')}</span>
+                    </label>
+                  )}
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Grade</span>
+                  </label>
+                  <select
+                    value={formState.grade}
+                    onChange={(e) => setFormState({ ...formState, grade: e.target.value })}
+                    className={`select select-bordered w-full ${hasFieldError('grade') ? 'select-error' : ''}`}
+                  >
+                    <option value="">Select grade</option>
+                    <option value="kindergarten">Kindergarten</option>
+                    <option value="1st">1st Grade</option>
+                    <option value="2nd">2nd Grade</option>
+                    <option value="3rd">3rd Grade</option>
+                    <option value="4th">4th Grade</option>
+                    <option value="5th">5th Grade</option>
+                    <option value="6th">6th Grade</option>
+                    <option value="7th">7th Grade</option>
+                    <option value="8th">8th Grade</option>
+                    <option value="9th">9th Grade</option>
+                    <option value="10th">10th Grade</option>
+                    <option value="11th">11th Grade</option>
+                    <option value="12th">12th Grade</option>
+                    <option value="college">College</option>
+                  </select>
+                  {hasFieldError('grade') && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">{getFieldError('grade').join(', ')}</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">School</span>
+                </label>
+                <input
+                  type="text"
+                  value={formState.school}
+                  onChange={(e) => setFormState({ ...formState, school: e.target.value })}
+                  className={`input input-bordered w-full ${hasFieldError('school') ? 'input-error' : ''}`}
+                  placeholder="Your school name"
+                />
+                {hasFieldError('school') && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{getFieldError('school').join(', ')}</span>
+                  </label>
+                )}
               </div>
             </div>
 
-            {/* SUBMIT BUTTON */}
+            {/* Safety Settings */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <ShieldIcon className="size-5 text-accent" />
+                Safety Settings
+              </h3>
+              
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Safety Level</span>
+                </label>
+                <select
+                  value={formState.safetyLevel}
+                  onChange={(e) => setFormState({ ...formState, safetyLevel: e.target.value })}
+                  className={`select select-bordered w-full ${hasFieldError('safetyLevel') ? 'select-error' : ''}`}
+                >
+                  <option value="strict">Strict - Maximum protection</option>
+                  <option value="moderate">Moderate - Balanced approach</option>
+                  <option value="relaxed">Relaxed - Minimal restrictions</option>
+                </select>
+                {hasFieldError('safetyLevel') && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{getFieldError('safetyLevel').join(', ')}</span>
+                  </label>
+                )}
+              </div>
 
+              <div className="space-y-3">
+                <label className="label cursor-pointer justify-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    checked={formState.allowDirectMessages}
+                    onChange={(e) => setFormState({ ...formState, allowDirectMessages: e.target.checked })}
+                  />
+                  <span className="label-text">Allow Direct Messages</span>
+                </label>
+                <label className="label cursor-pointer justify-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    checked={formState.allowGroupChats}
+                    onChange={(e) => setFormState({ ...formState, allowGroupChats: e.target.checked })}
+                  />
+                  <span className="label-text">Allow Group Chats</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Emergency Contact */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <UsersIcon className="size-5 text-info" />
+                Emergency Contact
+              </h3>
+              
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Contact Name *</span>
+                </label>
+                <input
+                  type="text"
+                  value={formState.emergencyContactName}
+                  onChange={(e) => setFormState({ ...formState, emergencyContactName: e.target.value })}
+                  className={`input input-bordered w-full ${hasFieldError('emergencyContactName') ? 'input-error' : ''}`}
+                  placeholder="Parent or guardian name"
+                  required
+                />
+                {hasFieldError('emergencyContactName') && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{getFieldError('emergencyContactName').join(', ')}</span>
+                  </label>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Relationship</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formState.emergencyContactRelationship}
+                    onChange={(e) => setFormState({ ...formState, emergencyContactRelationship: e.target.value })}
+                    className={`input input-bordered w-full ${hasFieldError('emergencyContactRelationship') ? 'input-error' : ''}`}
+                    placeholder="Parent, Guardian, etc."
+                  />
+                  {hasFieldError('emergencyContactRelationship') && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">{getFieldError('emergencyContactRelationship').join(', ')}</span>
+                    </label>
+                  )}
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Phone Number *</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={formState.emergencyContactPhone}
+                    onChange={(e) => setFormState({ ...formState, emergencyContactPhone: e.target.value })}
+                    className={`input input-bordered w-full ${hasFieldError('emergencyContactPhone') ? 'input-error' : ''}`}
+                    placeholder="+1 (555) 123-4567"
+                    required
+                  />
+                  {hasFieldError('emergencyContactPhone') && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">{getFieldError('emergencyContactPhone').join(', ')}</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Email Address (Optional)</span>
+                </label>
+                <input
+                  type="email"
+                  value={formState.emergencyContactEmail}
+                  onChange={(e) => setFormState({ ...formState, emergencyContactEmail: e.target.value })}
+                  className={`input input-bordered w-full ${hasFieldError('emergencyContactEmail') ? 'input-error' : ''}`}
+                  placeholder="contact@example.com"
+                />
+                {hasFieldError('emergencyContactEmail') && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{getFieldError('emergencyContactEmail').join(', ')}</span>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Info Alert */}
+            <div className="alert alert-info">
+              <ShieldIcon className="size-6" />
+              <div>
+                <h3 className="font-bold">COCOON Safety Features</h3>
+                <div className="text-sm">
+                  Your profile will be protected with AI monitoring, real-time alerts, and parent oversight.
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
             <button className="btn btn-primary w-full" disabled={isPending} type="submit">
               {!isPending ? (
                 <>
-                  <ShipWheelIcon className="size-5 mr-2" />
-                  Complete Onboarding
+                  <div className="w-5 h-5 mr-2">
+                    <Logo size="small" showText={false} />
+                  </div>
+                  Complete COCOON Setup
                 </>
               ) : (
                 <>
                   <LoaderIcon className="animate-spin size-5 mr-2" />
-                  Onboarding...
+                  Setting up...
                 </>
               )}
             </button>
@@ -189,4 +470,5 @@ const OnboardingPage = () => {
     </div>
   );
 };
+
 export default OnboardingPage;

@@ -97,33 +97,154 @@ export function logout(req, res) {
 export async function onboard(req, res) {
   try {
     const userId = req.user._id;
-    const { fullName, bio, nativeLanguage, learningLanguage, location } = req.body;
+    const {
+      // Basic Information
+      fullName, 
+      bio, 
+      nativeLanguage, 
+      learningLanguage, 
+      location,
+      profilePic,
+      
+      // COCOON-Specific Information
+      age,
+      grade,
+      school,
+      interests,
+      learningGoals,
+      
+      // Safety & Monitoring
+      safetyLevel,
+      allowedTopics,
+      restrictedTopics,
+      communicationPreferences,
+      
+      // Parent Monitoring Settings
+      monitoringSettings,
+      
+      // Educational Information
+      academicSubjects,
+      currentCourses,
+      dailyScreenTimeLimit,
+      preferredStudyTimes,
+      
+      // Emergency Contact
+      emergencyContact,
+    } = req.body;
+
+    console.log('🦋 COCOON Onboarding:', {
+      userId: userId.toString(),
+      role: req.user.role,
+      age,
+      grade,
+      safetyLevel,
+      hasEmergencyContact: !!emergencyContact?.name
+    });
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
-        ...req.body,
+        // Basic fields
+        fullName,
+        bio,
+        nativeLanguage,
+        learningLanguage,
+        location,
+        profilePic,
+        
+        // COCOON-specific fields
+        age: age ? parseInt(age) : null,
+        grade,
+        school,
+        interests: interests || [],
+        learningGoals,
+        
+        // Safety settings
+        safetyLevel: safetyLevel || 'moderate',
+        allowedTopics: allowedTopics || ['education', 'sports', 'music', 'art', 'science', 'math', 'literature'],
+        restrictedTopics: restrictedTopics || [],
+        communicationPreferences: {
+          allowDirectMessages: communicationPreferences?.allowDirectMessages ?? true,
+          allowGroupChats: communicationPreferences?.allowGroupChats ?? true,
+          allowFileSharing: communicationPreferences?.allowFileSharing ?? false,
+          allowVideoCalls: communicationPreferences?.allowVideoCalls ?? false,
+        },
+        
+        // Monitoring settings
+        monitoringSettings: {
+          aiAnalysisEnabled: monitoringSettings?.aiAnalysisEnabled ?? true,
+          realTimeAlerts: monitoringSettings?.realTimeAlerts ?? true,
+          weeklyReports: monitoringSettings?.weeklyReports ?? true,
+          contentFiltering: monitoringSettings?.contentFiltering ?? true,
+        },
+        
+        // Educational tracking
+        academicSubjects: academicSubjects || [],
+        currentCourses: currentCourses || [],
+        dailyScreenTimeLimit: dailyScreenTimeLimit || 120,
+        preferredStudyTimes: preferredStudyTimes || ['afternoon', 'evening'],
+        
+        // Emergency contact
+        emergencyContact: {
+          name: emergencyContact?.name || '',
+          relationship: emergencyContact?.relationship || '',
+          phone: emergencyContact?.phone || '',
+          email: emergencyContact?.email || '',
+        },
+        
+        // Mark as onboarded
         isOnboarded: true,
       },
       { new: true }
     );
 
-    if (!updatedUser) return res.status(404).json({ message: "User not found" });
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
+    // Update Stream Chat user with new information
     try {
       await upsertStreamUser({
         id: updatedUser._id.toString(),
         name: updatedUser.fullName,
         image: updatedUser.profilePic || "",
       });
-      console.log(`Stream user updated after onboarding for ${updatedUser.fullName}`);
+      console.log(`✅ Stream user updated after COCOON onboarding for ${updatedUser.fullName}`);
     } catch (streamError) {
-      console.log("Error updating Stream user during onboarding:", streamError.message);
+      console.log("⚠️ Error updating Stream user during onboarding:", streamError.message);
     }
 
-    res.status(200).json({ success: true, user: updatedUser });
+    // Log onboarding completion with role-specific information
+    if (updatedUser.role === 'student') {
+      console.log('🎓 Student onboarded:', {
+        name: updatedUser.fullName,
+        age: updatedUser.age,
+        grade: updatedUser.grade,
+        school: updatedUser.school,
+        safetyLevel: updatedUser.safetyLevel,
+        subjects: updatedUser.academicSubjects.length,
+        interests: updatedUser.interests.length
+      });
+    } else if (updatedUser.role === 'parent') {
+      console.log('👨‍👩‍👧‍👦 Parent onboarded:', {
+        name: updatedUser.fullName,
+        monitoringEnabled: updatedUser.monitoringSettings?.aiAnalysisEnabled,
+        emergencyContact: updatedUser.emergencyContact?.name
+      });
+    } else if (updatedUser.role === 'faculty') {
+      console.log('��‍🏫 Faculty onboarded:', {
+        name: updatedUser.fullName,
+        school: updatedUser.school
+      });
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      user: updatedUser,
+      message: "COCOON profile setup completed successfully!"
+    });
   } catch (error) {
-    console.error("Onboarding error:", error);
+    console.error('❌ COCOON onboarding error:', error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

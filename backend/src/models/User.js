@@ -46,6 +46,136 @@ const userSchema = new mongoose.Schema(
       enum: ['student', 'parent', 'faculty', 'admin'],
       default: 'student',
     },
+    
+    // COCOON-Specific Fields for Child Safety & Education
+    age: {
+      type: Number,
+      min: 5,
+      max: 18,
+      default: null,
+    },
+    grade: {
+      type: String,
+      enum: ['kindergarten', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th', 'college'],
+      default: null,
+    },
+    school: {
+      type: String,
+      default: "",
+    },
+    interests: [{
+      type: String,
+      default: [],
+    }],
+    learningGoals: {
+      type: String,
+      default: "",
+    },
+    
+    // Safety & Monitoring Settings
+    safetyLevel: {
+      type: String,
+      enum: ['strict', 'moderate', 'relaxed'],
+      default: 'moderate',
+    },
+    allowedTopics: [{
+      type: String,
+      enum: ['education', 'gaming', 'sports', 'music', 'art', 'science', 'math', 'literature', 'social'],
+      default: ['education', 'sports', 'music', 'art', 'science', 'math', 'literature'],
+    }],
+    restrictedTopics: [{
+      type: String,
+      default: [],
+    }],
+    communicationPreferences: {
+      allowDirectMessages: {
+        type: Boolean,
+        default: true,
+      },
+      allowGroupChats: {
+        type: Boolean,
+        default: true,
+      },
+      allowFileSharing: {
+        type: Boolean,
+        default: false,
+      },
+      allowVideoCalls: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    
+    // Parent Monitoring Settings
+    monitoringSettings: {
+      aiAnalysisEnabled: {
+        type: Boolean,
+        default: true,
+      },
+      realTimeAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      weeklyReports: {
+        type: Boolean,
+        default: true,
+      },
+      contentFiltering: {
+        type: Boolean,
+        default: true,
+      },
+    },
+    
+    // Educational Progress Tracking
+    academicSubjects: [{
+      type: String,
+      enum: ['math', 'science', 'english', 'history', 'geography', 'art', 'music', 'physical_education', 'computer_science'],
+      default: [],
+    }],
+    currentCourses: [{
+      type: String,
+      default: [],
+    }],
+    learningStreak: {
+      type: Number,
+      default: 0,
+    },
+    totalStudyTime: {
+      type: Number, // in minutes
+      default: 0,
+    },
+    
+    // Emergency Contact Information (for parents)
+    emergencyContact: {
+      name: {
+        type: String,
+        default: "",
+      },
+      relationship: {
+        type: String,
+        default: "",
+      },
+      phone: {
+        type: String,
+        default: "",
+      },
+      email: {
+        type: String,
+        default: "",
+      },
+    },
+    
+    // Time Management & Screen Time
+    dailyScreenTimeLimit: {
+      type: Number, // in minutes
+      default: 120, // 2 hours default
+    },
+    preferredStudyTimes: [{
+      type: String,
+      enum: ['morning', 'afternoon', 'evening', 'night'],
+      default: ['afternoon', 'evening'],
+    }],
+    
     friends: [
       {
         type: mongoose.Schema.Types.ObjectId,

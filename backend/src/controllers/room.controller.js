@@ -1,7 +1,6 @@
 import Room from "../models/Room.js";
 import User from "../models/User.js";
 import Message from "../models/Message.js";
-import { streamServerClient } from "../lib/stream.js";
 
 // Generate a unique invite code
 const generateInviteCode = () => {
@@ -184,312 +183,95 @@ export async function getRoomMembers(req, res) {
   }
 }
 
-// Send message to all room members
-export async function sendRoomMessage(req, res) {
+export async function deleteRoom(req, res) {
   try {
-    const { roomId, message, messageType = "text", targetUserId = null } = req.body;
+    const { roomId } = req.params;
     const facultyId = req.user._id;
 
-    // Verify the room exists and faculty owns it
-    const room = await Room.findById(roomId).populate("members", "fullName email");
+    // Find the room
+    const room = await Room.findById(roomId);
     if (!room) {
       return res.status(404).json({ message: "Room not found" });
     }
 
+    // Check if the user is the faculty who created this room
     if (room.faculty.toString() !== facultyId.toString()) {
-      return res.status(403).json({ message: "You can only send messages to your own rooms" });
+      return res.status(403).json({ message: "You can only delete rooms that you created" });
     }
 
-    // If targetUserId is provided, send to specific user only
-    if (targetUserId) {
-      const targetUser = await User.findById(targetUserId);
-      if (!targetUser) {
-        return res.status(404).json({ message: "Target user not found" });
-      }
+    // Delete all messages associated with this room
+    await Message.deleteMany({ roomId: roomId });
 
-      // Create direct message channel with target user
-      const channelId = [facultyId.toString(), targetUserId].sort().join("-");
-      const channel = streamServerClient.channel("messaging", channelId, {
-        members: [facultyId.toString(), targetUserId]
-      });
-
-      await channel.sendMessage({
-        text: message,
-        user_id: facultyId.toString()
-      });
-
-      // Save to local database for AI analysis
-      const newMessage = new Message({
-        sender: facultyId,
-        recipient: targetUserId,
-        content: message,
-        messageType: messageType,
-        roomId: roomId
-      });
-      await newMessage.save();
-
-      return res.status(200).json({
-        success: true,
-        message: "Message sent to user successfully",
-        targetUser: {
-          _id: targetUser._id,
-          fullName: targetUser.fullName,
-          email: targetUser.email
-        }
-      });
-    }
-
-    // Send to all room members
-    const results = [];
-    for (const member of room.members) {
-      if (member._id.toString() === facultyId.toString()) continue; // Skip self
-
-      try {
-        // Create direct message channel with each member
-        const channelId = [facultyId.toString(), member._id.toString()].sort().join("-");
-        const channel = streamServerClient.channel("messaging", channelId, {
-          members: [facultyId.toString(), member._id.toString()]
-        });
-
-        await channel.sendMessage({
-          text: message,
-          user_id: facultyId.toString()
-        });
-
-        // Save to local database for AI analysis
-        const newMessage = new Message({
-          sender: facultyId,
-          recipient: member._id,
-          content: message,
-          messageType: messageType,
-          roomId: roomId
-        });
-        await newMessage.save();
-
-        results.push({
-          _id: member._id,
-          fullName: member.fullName,
-          email: member.email,
-          status: "sent"
-        });
-      } catch (error) {
-        console.error(`Failed to send message to ${member.fullName}:`, error);
-        results.push({
-          _id: member._id,
-          fullName: member.fullName,
-          email: member.email,
-          status: "failed",
-          error: error.message
-        });
-      }
-    }
+    // Delete the room
+    await Room.findByIdAndDelete(roomId);
 
     res.status(200).json({
       success: true,
-      message: "Room message sent",
-      results: results,
-      totalSent: results.filter(r => r.status === "sent").length,
-      totalFailed: results.filter(r => r.status === "failed").length
+      message: "Room and all associated messages deleted successfully"
     });
-
   } catch (error) {
-    console.log("Error in sendRoomMessage controller", error.message);
+    console.log("Error in deleteRoom controller", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
 
-// Send file (image/document) to room members
-export async function sendRoomFile(req, res) {
+export async function deleteRooms(req, res) {
   try {
-    const { roomId, fileUrl, fileName, fileType, targetUserId = null } = req.body;
+    const { roomIds } = req.body;
     const facultyId = req.user._id;
 
-    // Verify the room exists and faculty owns it
-    const room = await Room.findById(roomId).populate("members", "fullName email");
-    if (!room) {
-      return res.status(404).json({ message: "Room not found" });
+    // Validate roomIds array
+    if (!Array.isArray(roomIds) || roomIds.length === 0) {
+      return res.status(400).json({ message: "Please provide an array of room IDs to delete" });
     }
 
-    if (room.faculty.toString() !== facultyId.toString()) {
-      return res.status(403).json({ message: "You can only send files to your own rooms" });
-    }
-
-    // If targetUserId is provided, send to specific user only
-    if (targetUserId) {
-      const targetUser = await User.findById(targetUserId);
-      if (!targetUser) {
-        return res.status(404).json({ message: "Target user not found" });
-      }
-
-      const channelId = [facultyId.toString(), targetUserId].sort().join("-");
-      const channel = streamServerClient.channel("messaging", channelId, {
-        members: [facultyId.toString(), targetUserId]
-      });
-
-      await channel.sendMessage({
-        text: `📎 ${fileName}`,
-        attachments: [{
-          type: fileType === "image" ? "image" : "file",
-          asset_url: fileUrl,
-          title: fileName
-        }],
-        user_id: facultyId.toString()
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: "File sent to user successfully",
-        targetUser: {
-          _id: targetUser._id,
-          fullName: targetUser.fullName,
-          email: targetUser.email
-        }
+    // Validate each roomId is a valid MongoDB ObjectId
+    const mongoose = await import("mongoose");
+    const invalidIds = roomIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ 
+        message: "Invalid room ID format", 
+        invalidIds 
       });
     }
 
-    // Send to all room members
-    const results = [];
-    for (const member of room.members) {
-      if (member._id.toString() === facultyId.toString()) continue;
+    // Find all rooms that belong to this faculty
+    const rooms = await Room.find({
+      _id: { $in: roomIds },
+      faculty: facultyId
+    });
 
-      try {
-        const channelId = [facultyId.toString(), member._id.toString()].sort().join("-");
-        const channel = streamServerClient.channel("messaging", channelId, {
-          members: [facultyId.toString(), member._id.toString()]
-        });
-
-        await channel.sendMessage({
-          text: `📎 ${fileName}`,
-          attachments: [{
-            type: fileType === "image" ? "image" : "file",
-            asset_url: fileUrl,
-            title: fileName
-          }],
-          user_id: facultyId.toString()
-        });
-
-        results.push({
-          _id: member._id,
-          fullName: member.fullName,
-          email: member.email,
-          status: "sent"
-        });
-      } catch (error) {
-        console.error(`Failed to send file to ${member.fullName}:`, error);
-        results.push({
-          _id: member._id,
-          fullName: member.fullName,
-          email: member.email,
-          status: "failed",
-          error: error.message
-        });
-      }
+    if (rooms.length === 0) {
+      return res.status(404).json({ message: "No rooms found to delete" });
     }
+
+    // Check if all requested rooms belong to this faculty
+    const foundRoomIds = rooms.map(room => room._id.toString());
+    const notFoundIds = roomIds.filter(id => !foundRoomIds.includes(id));
+    
+    if (notFoundIds.length > 0) {
+      return res.status(403).json({ 
+        message: "You can only delete rooms that you created",
+        notFoundIds
+      });
+    }
+
+    // Delete all the rooms
+    await Room.deleteMany({
+      _id: { $in: roomIds },
+      faculty: facultyId
+    });
+
+    // Delete all messages associated with these rooms
+    await Message.deleteMany({ roomId: { $in: roomIds } });
 
     res.status(200).json({
       success: true,
-      message: "File sent to room members",
-      results: results,
-      totalSent: results.filter(r => r.status === "sent").length,
-      totalFailed: results.filter(r => r.status === "failed").length
+      message: `${rooms.length} room${rooms.length > 1 ? 's' : ''} and all associated messages deleted successfully`,
+      deletedCount: rooms.length
     });
-
   } catch (error) {
-    console.log("Error in sendRoomFile controller", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-}
-
-// Send video call link to room members
-export async function sendVideoCallLink(req, res) {
-  try {
-    const { roomId, callUrl, callTitle = "Video Call", targetUserId = null } = req.body;
-    const facultyId = req.user._id;
-
-    // Verify the room exists and faculty owns it
-    const room = await Room.findById(roomId).populate("members", "fullName email");
-    if (!room) {
-      return res.status(404).json({ message: "Room not found" });
-    }
-
-    if (room.faculty.toString() !== facultyId.toString()) {
-      return res.status(403).json({ message: "You can only send video call links to your own rooms" });
-    }
-
-    const videoCallMessage = `🎥 ${callTitle}\n\nJoin the video call: ${callUrl}`;
-
-    // If targetUserId is provided, send to specific user only
-    if (targetUserId) {
-      const targetUser = await User.findById(targetUserId);
-      if (!targetUser) {
-        return res.status(404).json({ message: "Target user not found" });
-      }
-
-      const channelId = [facultyId.toString(), targetUserId].sort().join("-");
-      const channel = streamServerClient.channel("messaging", channelId, {
-        members: [facultyId.toString(), targetUserId]
-      });
-
-      await channel.sendMessage({
-        text: videoCallMessage,
-        user_id: facultyId.toString()
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: "Video call link sent to user successfully",
-        targetUser: {
-          _id: targetUser._id,
-          fullName: targetUser.fullName,
-          email: targetUser.email
-        }
-      });
-    }
-
-    // Send to all room members
-    const results = [];
-    for (const member of room.members) {
-      if (member._id.toString() === facultyId.toString()) continue;
-
-      try {
-        const channelId = [facultyId.toString(), member._id.toString()].sort().join("-");
-        const channel = streamServerClient.channel("messaging", channelId, {
-          members: [facultyId.toString(), member._id.toString()]
-        });
-
-        await channel.sendMessage({
-          text: videoCallMessage,
-          user_id: facultyId.toString()
-        });
-
-        results.push({
-          _id: member._id,
-          fullName: member.fullName,
-          email: member.email,
-          status: "sent"
-        });
-      } catch (error) {
-        console.error(`Failed to send video call link to ${member.fullName}:`, error);
-        results.push({
-          _id: member._id,
-          fullName: member.fullName,
-          email: member.email,
-          status: "failed",
-          error: error.message
-        });
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Video call link sent to room members",
-      results: results,
-      totalSent: results.filter(r => r.status === "sent").length,
-      totalFailed: results.filter(r => r.status === "failed").length
-    });
-
-  } catch (error) {
-    console.log("Error in sendVideoCallLink controller", error.message);
+    console.log("Error in deleteRooms controller", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

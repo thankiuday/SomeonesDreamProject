@@ -134,129 +134,159 @@ const FacultyMessagesViewer = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Messages Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold">Recent Faculty Messages</h3>
+      <div className="space-y-6">
+        {/* Refresh Button */}
+        <div className="flex justify-end">
           <button
             onClick={() => refetch()}
-            className="btn btn-sm btn-outline"
+            className="btn btn-outline btn-sm hover:btn-primary transition-all duration-300"
           >
+            <span className="mr-2">🔄</span>
             Refresh
           </button>
         </div>
         
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div key={message._id} className="card bg-base-200">
-              <div className="card-body p-4">
-                <div className="flex items-start gap-3">
-                  <div className="avatar">
-                    <div className="w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                      <UserIcon className="size-5 text-primary" />
+        <div className="space-y-6">
+          {messages.map((message, index) => (
+            <div 
+              key={message._id} 
+              className="bg-base-100 rounded-2xl shadow-sm border border-base-300/50 hover:shadow-md transition-all duration-300 overflow-hidden"
+            >
+              {/* Message Header */}
+              <div className="p-6 border-b border-base-300/30">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center flex-shrink-0">
+                    <UserIcon className="size-6 text-primary-content" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-lg text-base-content">
+                      {message.sender.fullName}
+                    </h4>
+                    <p className="text-sm text-base-content/60 truncate">
+                      {message.sender.email}
+                    </p>
+                    {message.roomId && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <GraduationCapIcon className="size-3 text-primary" />
+                        <span className="text-xs text-primary font-medium">{message.roomId.roomName}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-xs text-base-content/50 mb-1">
+                      {formatDate(message.createdAt)}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {getMessageIcon(message.messageType)}
+                      <span className="text-xs font-medium">{getMessageTypeLabel(message.messageType)}</span>
                     </div>
                   </div>
-                  
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{message.sender.fullName}</span>
-                      <span className="text-xs opacity-70">({message.sender.email})</span>
-                      {message.roomId && (
-                        <div className="flex items-center gap-1 text-xs opacity-70">
-                          <GraduationCapIcon className="size-3" />
-                          {message.roomId.roomName}
+                </div>
+              </div>
+              
+              {/* Message Content */}
+              <div className="p-6">
+                <div className="space-y-4">
+                  {message.messageType === "image" && message.content.includes("📎") ? (
+                    <div className="space-y-4">
+                      <div className="bg-base-200/50 p-4 rounded-xl">
+                        <p className="text-base-content">
+                          {message.content}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-primary">
+                          <ImageIcon className="size-4" />
+                          <span className="text-sm font-medium">Image Attachment</span>
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-xs opacity-70">
-                      {getMessageIcon(message.messageType)}
-                      <span>{getMessageTypeLabel(message.messageType)}</span>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        <CalendarIcon className="size-3" />
-                        {formatDate(message.createdAt)}
+                        <button
+                          onClick={() => handleFileDownload(message.fileUrl, message.fileName)}
+                          className="btn btn-primary btn-sm"
+                        >
+                          View Image
+                        </button>
                       </div>
                     </div>
-                    
-                    <div className="mt-2">
-                      {message.messageType === "image" && message.content.includes("📎") ? (
-                        <div className="space-y-2">
-                          <p className="text-sm">{message.content}</p>
-                          <div className="flex items-center gap-2">
-                            <ImageIcon className="size-4 text-primary" />
-                            <button
-                              onClick={() => handleFileDownload(message.fileUrl, message.fileName)}
-                              className="btn btn-sm btn-outline"
-                            >
-                              View Image
-                            </button>
-                          </div>
+                  ) : message.messageType === "file" && message.content.includes("📎") ? (
+                    <div className="space-y-4">
+                      <div className="bg-base-200/50 p-4 rounded-xl">
+                        <p className="text-base-content">
+                          {message.content}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-secondary">
+                          <FileTextIcon className="size-4" />
+                          <span className="text-sm font-medium">File Attachment</span>
                         </div>
-                      ) : message.messageType === "file" && message.content.includes("📎") ? (
-                        <div className="space-y-2">
-                          <p className="text-sm">{message.content}</p>
-                          <div className="flex items-center gap-2">
-                            <FileTextIcon className="size-4 text-primary" />
-                            <button
-                              onClick={() => handleFileDownload(message.fileUrl, message.fileName)}
-                              className="btn btn-sm btn-outline"
-                            >
-                              Download File
-                            </button>
-                          </div>
+                        <button
+                          onClick={() => handleFileDownload(message.fileUrl, message.fileName)}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  ) : message.content.includes("🎥") ? (
+                    <div className="space-y-4">
+                      <div className="bg-base-200/50 p-4 rounded-xl">
+                        <p className="text-base-content">
+                          {message.content}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-accent">
+                          <VideoIcon className="size-4" />
+                          <span className="text-sm font-medium">Video Call</span>
                         </div>
-                      ) : message.content.includes("🎥") ? (
-                        <div className="space-y-2">
-                          <p className="text-sm whitespace-pre-line">{message.content}</p>
-                          <div className="flex items-center gap-2">
-                            <VideoIcon className="size-4 text-primary" />
-                            <button
-                              onClick={() => handleVideoCallClick(message.content.split("Join the video call: ")[1])}
-                              className="btn btn-sm btn-primary"
-                            >
-                              <ExternalLinkIcon className="size-3 mr-1" />
-                              Join Video Call
-                            </button>
-                          </div>
+                        <button
+                          onClick={() => handleVideoCallClick(message.content.split("Join the video call: ")[1])}
+                          className="btn btn-accent btn-sm"
+                        >
+                          Join Call
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-base-200/50 p-4 rounded-xl">
+                      <p className="text-base-content whitespace-pre-line leading-relaxed">
+                        {message.content}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Read Status */}
+                  <div className="flex items-center justify-between pt-4 border-t border-base-300/30">
+                    <div className="flex items-center gap-2">
+                      {message.isRead ? (
+                        <div className="flex items-center gap-2 text-success">
+                          <CheckIcon className="size-4" />
+                          <span className="text-sm font-medium">Read</span>
                         </div>
                       ) : (
-                        <p className="text-sm whitespace-pre-line">{message.content}</p>
-                      )}
-                      
-                      {/* Read Button */}
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-base-300">
-                        <div className="flex items-center gap-2">
-                          {message.isRead ? (
-                            <div className="flex items-center gap-1 text-success text-xs">
-                              <CheckIcon className="size-3" />
-                              <span>Read</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-warning text-xs">
-                              <span className="size-2 rounded-full bg-warning inline-block" />
-                              <span>Unread</span>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-2 text-warning">
+                          <span className="size-2 rounded-full bg-warning animate-ping"></span>
+                          <span className="text-sm font-medium">Unread</span>
                         </div>
-                        
-                        {!message.isRead && (
-                          <button
-                            onClick={() => handleMarkAsRead(message._id)}
-                            disabled={markingAsRead}
-                            className="btn btn-sm btn-success"
-                          >
-                            {markingAsRead ? (
-                              <span className="loading loading-spinner loading-xs" />
-                            ) : (
-                              <CheckIcon className="size-3" />
-                            )}
-                            Mark as Read
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
+                    
+                    {!message.isRead && (
+                      <button
+                        onClick={() => handleMarkAsRead(message._id)}
+                        disabled={markingAsRead}
+                        className="btn btn-success btn-sm"
+                      >
+                        {markingAsRead ? (
+                          <span className="loading loading-spinner loading-xs" />
+                        ) : (
+                          <CheckIcon className="size-4" />
+                        )}
+                        Mark as Read
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -267,22 +297,33 @@ const FacultyMessagesViewer = () => {
 
       {/* Rooms Summary */}
       {rooms.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold">Your Classroom Rooms</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rooms.map((room) => (
-              <div key={room._id} className="card bg-base-200">
-                <div className="card-body p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="avatar">
-                      <div className="w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                        <GraduationCapIcon className="size-5 text-primary" />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-sm">{room.roomName}</h4>
-                      <p className="text-xs opacity-70">Teacher: {room.faculty.fullName}</p>
-                    </div>
+        <div className="bg-base-200/50 rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-secondary to-accent rounded-xl flex items-center justify-center">
+              <GraduationCapIcon className="size-5 text-secondary-content" />
+            </div>
+            <h3 className="text-xl font-bold text-base-content">
+              Your Classroom Rooms
+            </h3>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {rooms.map((room, index) => (
+              <div 
+                key={room._id} 
+                className="bg-base-100 rounded-xl p-4 hover:shadow-md transition-all duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-secondary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
+                    <GraduationCapIcon className="size-5 text-secondary-content" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-base-content truncate">
+                      {room.roomName}
+                    </h4>
+                    <p className="text-sm text-base-content/60 truncate">
+                      {room.faculty.fullName}
+                    </p>
                   </div>
                 </div>
               </div>

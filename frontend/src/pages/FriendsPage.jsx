@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { UsersIcon } from "lucide-react";
 import FriendCard from "../components/FriendCard";
 import NoFriendsFound from "../components/NoFriendsFound";
+import BackButton from "../components/BackButton";
 
 const FriendsPage = () => {
   const { data: friends = [], isLoading: loadingFriends } = useQuery({
@@ -12,12 +13,20 @@ const FriendsPage = () => {
   });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="container mx-auto space-y-10">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
+    <div className="p-4 sm:p-6 lg:p-8 relative">
+      {/* Back Button - Absolute positioned */}
+      <div className="absolute top-6 left-6 z-10">
+        <BackButton 
+          className="hover:bg-base-200/50 rounded-full p-2 transition-all duration-300 shadow-lg" 
+          variant="outline"
+        />
+      </div>
+      
+      <div className="container mx-auto space-y-10 pt-16 sm:pt-20">
+        <div className="flex flex-col items-center text-center space-y-4">
+          <div className="space-y-2">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Your Friends</h2>
-            <p className="opacity-70 mt-1">
+            <p className="opacity-70 mt-1 max-w-2xl mx-auto">
               Connect with your accepted friends for chat and video calls
             </p>
           </div>

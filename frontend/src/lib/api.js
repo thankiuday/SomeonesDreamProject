@@ -100,6 +100,19 @@ export async function getRoomMembers(roomId) {
   return response.data;
 }
 
+// Delete room functions
+export async function deleteRoom(roomId) {
+  const response = await axiosInstance.delete(`/rooms/${roomId}`);
+  return response.data;
+}
+
+export async function deleteRooms(roomIds) {
+  const response = await axiosInstance.delete("/rooms/bulk-delete", {
+    data: { roomIds }
+  });
+  return response.data;
+}
+
 // Parent Dashboard API functions
 export async function getMyChildren() {
   const response = await axiosInstance.get("/users/children");

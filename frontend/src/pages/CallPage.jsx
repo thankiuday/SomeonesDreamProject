@@ -18,6 +18,7 @@ import {
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import toast from "react-hot-toast";
 import PageLoader from "../components/PageLoader";
+import BackButton from "../components/BackButton";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
@@ -128,10 +129,10 @@ const CallPage = () => {
   // Show loading state while authentication or token is loading
   if (authLoading || tokenLoading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-base-100">
+      <div className="h-screen flex flex-col items-center justify-center bg-base-100 p-4">
         <div className="text-center">
           <PageLoader />
-          <p className="mt-4 text-base-content opacity-70">
+          <p className="mt-4 text-base-content opacity-70 text-sm sm:text-base">
             {authLoading ? "Checking authentication..." : "Getting video call token..."}
           </p>
         </div>
@@ -142,11 +143,17 @@ const CallPage = () => {
   // Show error state
   if (error) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-base-100">
-        <div className="card bg-error/10 p-8 text-center max-w-md">
+      <div className="h-screen flex flex-col items-center justify-center bg-base-100 p-4">
+        <div className="absolute top-6 left-6 z-10">
+          <BackButton 
+            className="hover:bg-base-200/50 rounded-full p-2 transition-all duration-300 shadow-lg" 
+            variant="outline"
+          />
+        </div>
+        <div className="card bg-error/10 p-4 sm:p-8 text-center max-w-md w-full">
           <h3 className="font-semibold text-lg mb-4 text-error">Video Call Error</h3>
-          <p className="text-error-content opacity-70 mb-6">{error}</p>
-          <div className="flex gap-3 justify-center">
+          <p className="text-error-content opacity-70 mb-6 text-sm sm:text-base">{error}</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => window.location.reload()}
               className="btn btn-error btn-outline"
@@ -168,10 +175,16 @@ const CallPage = () => {
   // Show connecting state
   if (isConnecting) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-base-100">
+      <div className="h-screen flex flex-col items-center justify-center bg-base-100 p-4">
+        <div className="absolute top-6 left-6 z-10">
+          <BackButton 
+            className="hover:bg-base-200/50 rounded-full p-2 transition-all duration-300 shadow-lg" 
+            variant="outline"
+          />
+        </div>
         <div className="text-center">
           <PageLoader />
-          <p className="mt-4 text-base-content opacity-70">Joining video call...</p>
+          <p className="mt-4 text-base-content opacity-70 text-sm sm:text-base">Joining video call...</p>
           <div className="mt-2 text-sm text-base-content opacity-50">
             This may take a few moments
           </div>
@@ -190,13 +203,19 @@ const CallPage = () => {
             </StreamCall>
           </StreamVideo>
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <div className="card bg-base-200 p-8 text-center">
+          <div className="flex items-center justify-center h-full p-4">
+            <div className="absolute top-6 left-6 z-10">
+              <BackButton 
+                className="hover:bg-base-200/50 rounded-full p-2 transition-all duration-300 shadow-lg" 
+                variant="outline"
+              />
+            </div>
+            <div className="card bg-base-200 p-4 sm:p-8 text-center max-w-md w-full">
               <h3 className="font-semibold text-lg mb-4">Call Not Available</h3>
-              <p className="text-base-content opacity-70 mb-6">
+              <p className="text-base-content opacity-70 mb-6 text-sm sm:text-base">
                 Could not initialize call. Please refresh or try again later.
               </p>
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => window.location.reload()}
                   className="btn btn-primary"

@@ -19,7 +19,8 @@ import {
   CheckCircleIcon,
   ClockIcon,
   KeyIcon,
-  CopyIcon
+  CopyIcon,
+  GraduationCapIcon
 } from "lucide-react";
 
 const ParentDashboard = () => {
@@ -31,6 +32,7 @@ const ParentDashboard = () => {
   const [linkCode, setLinkCode] = useState(null);
   const [linkCodeExpires, setLinkCodeExpires] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [conversationFilter, setConversationFilter] = useState("all"); // all, friends, classroom, direct
 
   // Fetch parent's children
   const { data: children = [], isLoading: loadingChildren } = useQuery({
@@ -43,6 +45,20 @@ const ParentDashboard = () => {
     queryKey: ["childConversations", selectedChild?._id],
     queryFn: () => getChildConversations(selectedChild._id),
     enabled: !!selectedChild,
+  });
+
+  // Filter conversations based on selected filter
+  const filteredConversations = conversations.filter(conversation => {
+    switch (conversationFilter) {
+      case "friends":
+        return conversation.isFriend;
+      case "classroom":
+        return conversation.isRoomMember;
+      case "direct":
+        return conversation.hasDirectChat;
+      default:
+        return true; // "all"
+    }
   });
 
   // Link child mutation
@@ -154,16 +170,16 @@ const ParentDashboard = () => {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
+        <div className="flex flex-col items-center text-center space-y-4 sm:flex-row sm:items-start sm:text-left sm:justify-between sm:space-y-0">
+          <div className="space-y-2">
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Parent Dashboard</h1>
-            <p className="text-base-content opacity-70 mt-2">
+            <p className="text-base-content opacity-70 max-w-2xl mx-auto sm:mx-0">
               Monitor your children's online interactions and ensure their digital safety
             </p>
           </div>
           <button
             onClick={() => setIsLinkModalOpen(true)}
-            className="btn btn-primary"
+            className="btn btn-primary w-full sm:w-auto"
             disabled={linkingChild}
           >
             <UserPlusIcon className="mr-2 size-4" />
@@ -303,86 +319,214 @@ const ParentDashboard = () => {
                 {selectedChild.fullName}'s Conversations
               </h2>
             </div>
+
+            {/* Conversation Statistics */}
+            {!loadingConversations && conversations.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                <div className="stat bg-base-200 rounded-lg p-3 md:p-4">
+                  <div className="stat-figure text-primary">
+                    <UsersIcon className="size-4 md:size-6" />
+                  </div>
+                  <div className="stat-title text-xs md:text-sm">Total Contacts</div>
+                  <div className="stat-value text-lg md:text-2xl text-primary">{conversations.length}</div>
+                </div>
+                
+                <div className="stat bg-base-200 rounded-lg p-3 md:p-4">
+                  <div className="stat-figure text-secondary">
+                    <CheckCircleIcon className="size-4 md:size-6" />
+                  </div>
+                  <div className="stat-title text-xs md:text-sm">Friends</div>
+                  <div className="stat-value text-lg md:text-2xl text-secondary">
+                    {conversations.filter(c => c.isFriend).length}
+                  </div>
+                </div>
+                
+                <div className="stat bg-base-200 rounded-lg p-3 md:p-4">
+                  <div className="stat-figure text-accent">
+                    <GraduationCapIcon className="size-4 md:size-6" />
+                  </div>
+                  <div className="stat-title text-xs md:text-sm">Classroom</div>
+                  <div className="stat-value text-lg md:text-2xl text-accent">
+                    {conversations.filter(c => c.isRoomMember).length}
+                  </div>
+                </div>
+                
+                <div className="stat bg-base-200 rounded-lg p-3 md:p-4">
+                  <div className="stat-figure text-info">
+                    <MessageSquareIcon className="size-4 md:size-6" />
+                  </div>
+                  <div className="stat-title text-xs md:text-sm">Direct Chats</div>
+                  <div className="stat-value text-lg md:text-2xl text-info">
+                    {conversations.filter(c => c.hasDirectChat).length}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Filter Buttons */}
+            {!loadingConversations && conversations.length > 0 && (
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                <button
+                  onClick={() => setConversationFilter("all")}
+                  className={`btn btn-xs sm:btn-sm ${conversationFilter === "all" ? "btn-primary" : "btn-outline"}`}
+                >
+                  All ({conversations.length})
+                </button>
+                <button
+                  onClick={() => setConversationFilter("friends")}
+                  className={`btn btn-xs sm:btn-sm ${conversationFilter === "friends" ? "btn-secondary" : "btn-outline"}`}
+                >
+                  Friends ({conversations.filter(c => c.isFriend).length})
+                </button>
+                <button
+                  onClick={() => setConversationFilter("classroom")}
+                  className={`btn btn-xs sm:btn-sm ${conversationFilter === "classroom" ? "btn-accent" : "btn-outline"}`}
+                >
+                  Classroom ({conversations.filter(c => c.isRoomMember).length})
+                </button>
+                <button
+                  onClick={() => setConversationFilter("direct")}
+                  className={`btn btn-xs sm:btn-sm ${conversationFilter === "direct" ? "btn-info" : "btn-outline"}`}
+                >
+                  Direct ({conversations.filter(c => c.hasDirectChat).length})
+                </button>
+              </div>
+            )}
             
             {loadingConversations ? (
               <div className="flex justify-center py-12">
                 <span className="loading loading-spinner loading-lg" />
               </div>
-            ) : conversations.length === 0 ? (
+            ) : filteredConversations.length === 0 ? (
               <div className="card bg-base-200 p-6 text-center">
                 <MessageSquareIcon className="size-12 mx-auto mb-3 opacity-50" />
-                <h3 className="font-semibold text-lg mb-2">No conversations yet</h3>
+                <h3 className="font-semibold text-lg mb-2">
+                  {conversationFilter === "all" 
+                    ? "No conversations yet" 
+                    : `No ${conversationFilter} conversations found`
+                  }
+                </h3>
                 <p className="text-base-content opacity-70">
-                  {selectedChild.fullName} hasn't started any conversations yet.
+                  {conversationFilter === "all" 
+                    ? `${selectedChild.fullName} hasn't started any conversations yet.`
+                    : `Try selecting a different filter or check back later.`
+                  }
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                {conversations.map((conversation) => {
+                {filteredConversations.map((conversation) => {
                   const analysisResult = getAnalysisResult(selectedChild._id, conversation._id);
                   const isAnalyzing = analyzing && 
                     analysisResult === undefined;
 
+                  // Determine conversation type badges
+                  const getConversationTypeBadges = () => {
+                    const badges = [];
+                    if (conversation.isFriend) {
+                      badges.push(
+                        <span key="friend" className="badge badge-primary badge-sm">
+                          Friend
+                        </span>
+                      );
+                    }
+                    if (conversation.isRoomMember) {
+                      badges.push(
+                        <span key="classroom" className="badge badge-secondary badge-sm">
+                          Classroom
+                        </span>
+                      );
+                    }
+                    if (conversation.hasDirectChat) {
+                      badges.push(
+                        <span key="direct" className="badge badge-accent badge-sm">
+                          Direct Chat
+                        </span>
+                      );
+                    }
+                    return badges;
+                  };
+
                   return (
                     <div key={conversation._id} className="card bg-base-200">
-                      <div className="card-body p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="avatar">
-                              <div className="w-12 rounded-full">
+                      <div className="card-body p-4 md:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="avatar flex-shrink-0">
+                              <div className="w-10 md:w-12 rounded-full">
                                 <img src={conversation.profilePic} alt={conversation.fullName} />
                               </div>
                             </div>
-                            <div>
-                              <h3 className="font-semibold text-lg">{conversation.fullName}</h3>
-                              <div className="flex items-center gap-2 text-sm opacity-70">
-                                <span className="badge badge-outline badge-sm">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-semibold text-base md:text-lg truncate">{conversation.fullName}</h3>
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm opacity-70 mb-2">
+                                <span className="badge badge-outline badge-xs sm:badge-sm">
                                   {conversation.role}
                                 </span>
-                                <span>{conversation.email}</span>
+                                <span className="truncate text-xs sm:text-sm">{conversation.email}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {getConversationTypeBadges()}
                               </div>
                             </div>
                           </div>
                           <button
                             onClick={() => handleAnalyzeChat(selectedChild._id, conversation._id)}
                             disabled={isAnalyzing || analyzing}
-                            className={`btn btn-sm ${
+                            className={`btn btn-xs sm:btn-sm ${
                               analysisResult ? "btn-success" : "btn-primary"
-                            }`}
+                            } flex-shrink-0`}
                           >
                             {isAnalyzing ? (
                               <span className="loading loading-spinner loading-xs" />
                             ) : analysisResult ? (
-                              <CheckCircleIcon className="size-4" />
+                              <CheckCircleIcon className="size-3 md:size-4" />
                             ) : (
-                              <BrainIcon className="size-4" />
+                              <BrainIcon className="size-3 md:size-4" />
                             )}
-                            {analysisResult ? "Analysis Complete" : "Get AI Summary"}
+                            <span className="hidden sm:inline ml-1">
+                              {analysisResult ? "Analysis Complete" : "Get AI Summary"}
+                            </span>
+                            <span className="sm:hidden">
+                              {analysisResult ? "Complete" : "Analyze"}
+                            </span>
                           </button>
                         </div>
 
                         {/* AI Analysis Result */}
                         {analysisResult && (
-                          <div className="mt-4 p-4 bg-base-300 rounded-lg">
+                          <div className="mt-4 p-3 md:p-4 bg-base-300 rounded-lg">
                             <div className="flex items-center gap-2 mb-3">
-                              <ShieldIcon className="size-5 text-primary" />
-                              <h4 className="font-semibold">AI Safety Analysis</h4>
+                              <ShieldIcon className="size-4 md:size-5 text-primary" />
+                              <h4 className="font-semibold text-sm md:text-base">AI Safety Analysis</h4>
                             </div>
                             
                             <div className="space-y-3">
-                              <p className="text-sm leading-relaxed">
+                              <p className="text-xs md:text-sm leading-relaxed">
                                 {analysisResult.analysis}
                               </p>
                               
                               <div className="flex flex-wrap gap-2 text-xs opacity-70">
                                 <span className="flex items-center gap-1">
                                   <ClockIcon className="size-3" />
-                                  {analysisResult.context?.messageCount} messages
+                                  {analysisResult.context?.messageCount || 0} messages
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <UsersIcon className="size-3" />
                                   {analysisResult.context?.targetRole}
                                 </span>
+                                {analysisResult.context?.isFriend && (
+                                  <span className="flex items-center gap-1">
+                                    <CheckCircleIcon className="size-3" />
+                                    Friend
+                                  </span>
+                                )}
+                                {analysisResult.context?.isClassroomMember && (
+                                  <span className="flex items-center gap-1">
+                                    <GraduationCapIcon className="size-3" />
+                                    Classroom
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

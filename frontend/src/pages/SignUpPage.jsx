@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ShipWheelIcon } from "lucide-react";
 import { Link } from "react-router";
-
 import useSignUp from "../hooks/useSignUp";
+import Logo from "../components/Logo";
+import { useThemeStore } from "../store/useThemeStore";
 
 const SignUpPage = () => {
+  const { theme } = useThemeStore();
   const [signupData, setSignupData] = useState({
     fullName: "",
     email: "",
@@ -12,18 +13,6 @@ const SignUpPage = () => {
     role: "student", // Default role
   });
 
-  // This is how we did it at first, without using our custom hook
-  // const queryClient = useQueryClient();
-  // const {
-  //   mutate: signupMutation,
-  //   isPending,
-  //   error,
-  // } = useMutation({
-  //   mutationFn: signup,
-  //   onSuccess: () => queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-  // });
-
-  // This is how we did it using our custom hook - optimized version
   const { isPending, error, signupMutation } = useSignUp();
 
   const handleSignup = (e) => {
@@ -33,59 +22,56 @@ const SignUpPage = () => {
 
   return (
     <div
-      className="h-screen flex items-center justify-center p-4 sm:p-6 md:p-8"
-      data-theme="forest"
+      className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8"
+      data-theme={theme}
     >
-      <div className="border border-primary/25 flex flex-col lg:flex-row w-full max-w-5xl mx-auto bg-base-100 rounded-xl shadow-lg overflow-hidden">
-        {/* SIGNUP FORM - LEFT SIDE */}
-        <div className="w-full lg:w-1/2 p-4 sm:p-8 flex flex-col">
-          {/* LOGO */}
-          <div className="mb-4 flex items-center justify-start gap-2">
-            <ShipWheelIcon className="size-9 text-primary" />
-            <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
-              COCOON
-            </span>
-          </div>
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="border border-primary/25 flex flex-col lg:flex-row bg-base-100 rounded-xl shadow-lg overflow-hidden">
+          {/* SIGNUP FORM - LEFT SIDE */}
+          <div className="w-full lg:w-1/2 p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
+            {/* LOGO */}
+            <div className="mb-6 flex items-center justify-center lg:justify-start gap-2">
+              <Logo />
+            </div>
 
-          {/* ERROR MESSAGE IF ANY */}
-          {error && (
-            <div className="alert alert-error mb-4">
-              <div>
-                <h4 className="font-bold">Signup Failed</h4>
-                <div className="text-sm">
-                  {error.response?.data?.message && (
-                    <p className="mb-2">{error.response.data.message}</p>
-                  )}
-                  {error.response?.data?.errors && (
-                    <ul className="list-disc list-inside space-y-1">
-                      {error.response.data.errors.map((err, index) => (
-                        <li key={index}>
-                          <strong>{err.field}:</strong> {err.message}
-                          {err.value && <span className="text-xs opacity-70"> (Value: {err.value})</span>}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+            {/* ERROR MESSAGE IF ANY */}
+            {error && (
+              <div className="alert alert-error mb-6">
+                <div>
+                  <h4 className="font-bold">Signup Failed</h4>
+                  <div className="text-sm">
+                    {error.response?.data?.message && (
+                      <p className="mb-2">{error.response.data.message}</p>
+                    )}
+                    {error.response?.data?.errors && (
+                      <ul className="list-disc list-inside space-y-1">
+                        {error.response.data.errors.map((err, index) => (
+                          <li key={index}>
+                            <strong>{err.field}:</strong> {err.message}
+                            {err.value && <span className="text-xs opacity-70"> (Value: {err.value})</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="w-full">
-            <form onSubmit={handleSignup}>
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-xl font-semibold">Create an Account</h2>
-                  <p className="text-sm opacity-70">
+            <div className="w-full max-w-md mx-auto lg:mx-0">
+              <form onSubmit={handleSignup} className="space-y-6">
+                <div className="text-center lg:text-left">
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">Create an Account</h2>
+                  <p className="text-sm sm:text-base opacity-70">
                     Join COCOON - Emotional Safety & Digital Protection for Every Child
                   </p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {/* FULLNAME */}
                   <div className="form-control w-full">
                     <label className="label">
-                      <span className="label-text">Full Name</span>
+                      <span className="label-text font-medium">Full Name</span>
                     </label>
                     <input
                       type="text"
@@ -96,108 +82,113 @@ const SignUpPage = () => {
                       required
                     />
                   </div>
+                  
                   {/* EMAIL */}
                   <div className="form-control w-full">
                     <label className="label">
-                      <span className="label-text">Email</span>
+                      <span className="label-text font-medium">Email</span>
                     </label>
                     <input
                       type="email"
-                      placeholder="john@gmail.com"
+                      placeholder="hello@example.com"
                       className="input input-bordered w-full"
                       value={signupData.email}
                       onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
                       required
                     />
                   </div>
+
                   {/* PASSWORD */}
                   <div className="form-control w-full">
                     <label className="label">
-                      <span className="label-text">Password</span>
+                      <span className="label-text font-medium">Password</span>
                     </label>
                     <input
                       type="password"
-                      placeholder="********"
+                      placeholder="••••••••"
                       className="input input-bordered w-full"
                       value={signupData.password}
                       onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
                       required
                     />
-                    <p className="text-xs opacity-70 mt-1">
-                      Password must be at least 6 characters long and contain at least one letter and one number
-                    </p>
                   </div>
 
                   {/* ROLE SELECTION */}
                   <div className="form-control w-full">
                     <label className="label">
-                      <span className="label-text">I am a...</span>
+                      <span className="label-text font-medium">I am a...</span>
                     </label>
-                    <select
-                      className="select select-bordered w-full"
-                      value={signupData.role}
-                      onChange={(e) => setSignupData({ ...signupData, role: e.target.value })}
-                      required
-                    >
-                      <option value="student">Student</option>
-                      <option value="parent">Parent</option>
-                      <option value="faculty">Faculty/Teacher</option>
-                      <option value="admin">Administrator</option>
-                    </select>
-                    <p className="text-xs opacity-70 mt-1">
-                      Select your role to access the appropriate features
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { value: "student", label: "Student", icon: "👨‍🎓" },
+                        { value: "parent", label: "Parent", icon: "👨‍👩‍👧‍👦" },
+                        { value: "faculty", label: "Faculty", icon: "👨‍🏫" },
+                      ].map((role) => (
+                        <label
+                          key={role.value}
+                          className={`cursor-pointer border-2 rounded-lg p-3 text-center transition-all ${
+                            signupData.role === role.value
+                              ? "border-primary bg-primary/10"
+                              : "border-base-300 hover:border-primary/50"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="role"
+                            value={role.value}
+                            checked={signupData.role === role.value}
+                            onChange={(e) => setSignupData({ ...signupData, role: e.target.value })}
+                            className="hidden"
+                          />
+                          <div className="text-2xl mb-1">{role.icon}</div>
+                          <div className="text-sm font-medium">{role.label}</div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary w-full h-12 text-base font-medium" 
+                    disabled={isPending}
+                  >
+                    {isPending ? (
+                      <>
+                        <span className="loading loading-spinner loading-sm"></span>
+                        Creating account...
+                      </>
+                    ) : (
+                      "Create Account"
+                    )}
+                  </button>
+
+                  <div className="text-center pt-4">
+                    <p className="text-sm sm:text-base">
+                      Already have an account?{" "}
+                      <Link to="/login" className="text-primary hover:underline font-medium">
+                        Sign in
+                      </Link>
                     </p>
                   </div>
-
-                  <div className="form-control">
-                    <label className="label cursor-pointer justify-start gap-2">
-                      <input type="checkbox" className="checkbox checkbox-sm" required />
-                      <span className="text-xs leading-tight">
-                        I agree to the{" "}
-                        <span className="text-primary hover:underline">terms of service</span> and{" "}
-                        <span className="text-primary hover:underline">privacy policy</span>
-                      </span>
-                    </label>
-                  </div>
                 </div>
-
-                <button className="btn btn-primary w-full" type="submit">
-                  {isPending ? (
-                    <>
-                      <span className="loading loading-spinner loading-xs"></span>
-                      Loading...
-                    </>
-                  ) : (
-                    "Create Account"
-                  )}
-                </button>
-
-                <div className="text-center mt-4">
-                  <p className="text-sm">
-                    Already have an account?{" "}
-                    <Link to="/login" className="text-primary hover:underline">
-                      Sign in
-                    </Link>
-                  </p>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        {/* SIGNUP FORM - RIGHT SIDE */}
-        <div className="hidden lg:flex w-full lg:w-1/2 bg-primary/10 items-center justify-center">
-          <div className="max-w-md p-8">
-            {/* Illustration */}
-            <div className="relative aspect-square max-w-sm mx-auto">
-              <img src="/i.png" alt="Language connection illustration" className="w-full h-full" />
+              </form>
             </div>
+          </div>
 
-            <div className="text-center space-y-3 mt-6">
-              <h2 className="text-xl font-semibold">Safe Communication for Children</h2>
-              <p className="opacity-70">
-                AI-powered monitoring, secure parent-child linking, and protected digital interactions
-              </p>
+          {/* IMAGE SECTION - RIGHT SIDE */}
+          <div className="hidden lg:flex w-full lg:w-1/2 bg-primary/10 items-center justify-center">
+            <div className="max-w-md p-8">
+              {/* Illustration */}
+              <div className="relative aspect-square max-w-sm mx-auto">
+                <img src="/i.png" alt="Language connection illustration" className="w-full h-full object-contain" />
+              </div>
+
+              <div className="text-center space-y-4 mt-8">
+                <h2 className="text-2xl font-bold">Join COCOON Today</h2>
+                <p className="opacity-70 text-lg">
+                  Experience the future of safe, monitored communication for children and families
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -205,5 +196,4 @@ const SignUpPage = () => {
     </div>
   );
 };
-
 export default SignUpPage;

@@ -508,51 +508,55 @@ const FacultyMessaging = ({ room, onClose }) => {
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-2xl">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-bold text-xl">Send Message to {room.roomName}</h3>
+      <div className="modal-box w-full max-w-2xl mx-4">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h3 className="font-bold text-lg sm:text-xl">Send Message to {room.roomName}</h3>
           <button
             onClick={onClose}
             className="btn btn-ghost btn-sm btn-circle"
             disabled={isSending}
           >
-            <XIcon className="size-5" />
+            <XIcon className="size-4 sm:size-5" />
           </button>
         </div>
 
         {/* Message Type Selector */}
-        <div className="tabs tabs-boxed mb-6">
+        <div className="tabs tabs-boxed mb-4 sm:mb-6 overflow-x-auto">
           <button
-            className={`tab ${messageType === "text" ? "tab-active" : ""}`}
+            className={`tab flex-shrink-0 ${messageType === "text" ? "tab-active" : ""}`}
             onClick={() => setMessageType("text")}
             disabled={isSending}
           >
-            <MessageCircleIcon className="size-4 mr-2" />
-            Text Message
+            <MessageCircleIcon className="size-3 sm:size-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Text Message</span>
+            <span className="sm:hidden">Text</span>
           </button>
           <button
-            className={`tab ${messageType === "file" ? "tab-active" : ""}`}
+            className={`tab flex-shrink-0 ${messageType === "file" ? "tab-active" : ""}`}
             onClick={() => setMessageType("file")}
             disabled={isSending}
           >
-            <FileIcon className="size-4 mr-2" />
-            File/Image
+            <FileIcon className="size-3 sm:size-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">File/Image</span>
+            <span className="sm:hidden">File</span>
           </button>
           <button
-            className={`tab ${messageType === "video" ? "tab-active" : ""}`}
+            className={`tab flex-shrink-0 ${messageType === "video" ? "tab-active" : ""}`}
             onClick={() => setMessageType("video")}
             disabled={isSending}
           >
-            <VideoIcon className="size-4 mr-2" />
-            Video Call Link
+            <VideoIcon className="size-3 sm:size-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Video Call Link</span>
+            <span className="sm:hidden">Link</span>
           </button>
           <button
-            className={`tab ${messageType === "start-video" ? "tab-active" : ""}`}
+            className={`tab flex-shrink-0 ${messageType === "start-video" ? "tab-active" : ""}`}
             onClick={() => setMessageType("start-video")}
             disabled={isSending}
           >
-            <PlayIcon className="size-4 mr-2" />
-            Start Video Call
+            <PlayIcon className="size-3 sm:size-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Start Video Call</span>
+            <span className="sm:hidden">Start</span>
           </button>
         </div>
 
@@ -704,7 +708,7 @@ const FacultyMessaging = ({ room, onClose }) => {
 
         {/* Text Message Form */}
         {messageType === "text" && (
-          <form onSubmit={handleSendMessage} className="space-y-4">
+          <form onSubmit={handleSendMessage} className="space-y-3 sm:space-y-4">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Message:</span>
@@ -736,7 +740,7 @@ const FacultyMessaging = ({ room, onClose }) => {
               </label>
             </div>
             
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -763,7 +767,7 @@ const FacultyMessaging = ({ room, onClose }) => {
 
         {/* File Upload Form */}
         {messageType === "file" && (
-          <form onSubmit={handleSendFile} className="space-y-4">
+          <form onSubmit={handleSendFile} className="space-y-3 sm:space-y-4">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Select File:</span>
@@ -813,7 +817,7 @@ const FacultyMessaging = ({ room, onClose }) => {
               </div>
             )}
             
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -840,7 +844,7 @@ const FacultyMessaging = ({ room, onClose }) => {
 
         {/* Video Call Form */}
         {messageType === "video" && (
-          <form onSubmit={handleSendVideoCall} className="space-y-4">
+          <form onSubmit={handleSendVideoCall} className="space-y-3 sm:space-y-4">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Video Call Title (Optional):</span>
@@ -888,7 +892,7 @@ const FacultyMessaging = ({ room, onClose }) => {
               </label>
             </div>
             
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -915,7 +919,7 @@ const FacultyMessaging = ({ room, onClose }) => {
 
         {/* Start Video Call Form */}
         {messageType === "start-video" && (
-          <form onSubmit={handleStartVideoCall} className="space-y-4">
+          <form onSubmit={handleStartVideoCall} className="space-y-3 sm:space-y-4">
             <div className="alert alert-info">
               <VideoIcon className="size-5" />
               <div>
@@ -938,7 +942,7 @@ const FacultyMessaging = ({ room, onClose }) => {
               />
             </div>
             
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
               <button
                 type="button"
                 className="btn btn-ghost"

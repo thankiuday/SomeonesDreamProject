@@ -1,1 +1,15 @@
+# Handle client-side routing for SPA
 /*    /index.html   200
+
+# Specific routes for video calls and chats
+/call/*    /index.html   200
+/chat/*    /index.html   200
+/faculty-dashboard    /index.html   200
+/student-dashboard    /index.html   200
+/parent-dashboard    /index.html   200
+/faculty-messages    /index.html   200
+/friends    /index.html   200
+/notifications    /index.html   200
+/onboarding    /index.html   200
+/login    /index.html   200
+/signup    /index.html   200

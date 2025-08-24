@@ -83,8 +83,11 @@ app.get('/api/health', (req, res) => {
 
 // Production static files
 if (process.env.NODE_ENV === "production") {
-  // Serve static files from the frontend build
-  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+  const frontendDistPath = path.join(__dirname, "../frontend/dist");
+  const indexPath = path.join(frontendDistPath, "index.html");
+  
+  // Serve static files from the frontend build (if it exists)
+  app.use(express.static(frontendDistPath));
 
   // Handle all other routes by serving the React app (but not API routes)
   app.get("*", (req, res, next) => {
@@ -92,7 +95,17 @@ if (process.env.NODE_ENV === "production") {
     if (req.path.startsWith('/api/')) {
       return next();
     }
-    res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+    
+    // Try to serve the React app, fallback to error if not found
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.log('Frontend build not found, returning API-only response');
+        res.status(404).json({ 
+          message: 'Frontend not built. Please ensure frontend is built before deployment.',
+          error: 'Frontend build missing'
+        });
+      }
+    });
   });
 }
 

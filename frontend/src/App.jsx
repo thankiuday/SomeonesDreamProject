@@ -14,6 +14,7 @@ import FacultyDashboard from "./pages/FacultyDashboard.jsx";
 import ParentDashboard from "./pages/ParentDashboard.jsx";
 import StudentDashboard from "./pages/StudentDashboard.jsx";
 import FacultyMessagesPage from "./pages/FacultyMessagesPage.jsx";
+import StreamVideoTest from "./components/StreamVideoTest.jsx";
 
 import { Toaster } from "react-hot-toast";
 
@@ -150,6 +151,17 @@ const App = () => {
             <ProtectedRoute>
               <Layout showSidebar={false}>
                 <ChatPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/stream-video-test"
+          element={
+            <ProtectedRoute>
+              <Layout showSidebar={true}>
+                <StreamVideoTest />
               </Layout>
             </ProtectedRoute>
           }

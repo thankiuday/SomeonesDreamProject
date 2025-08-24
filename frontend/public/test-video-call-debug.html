@@ -90,6 +90,7 @@
         <button class="test-button" onclick="testStreamAPI()">🔑 Test Stream API</button>
         <button class="test-button" onclick="testCallCreation()">🎥 Test Call Creation</button>
         <button class="test-button" onclick="testSpecificCall()">🎯 Test Specific Call</button>
+        <button class="test-button" onclick="testStreamVideoSDK()">📦 Test Stream Video SDK</button>
         
         <div id="test-results"></div>
     </div>
@@ -102,6 +103,7 @@
         <a href="/call/faculty-math01-1756030850537" class="test-button">🎥 Faculty Call (/call/faculty-math01-1756030850537)</a>
         <a href="/call/student-call-456" class="test-button">🎥 Student Call (/call/student-call-456)</a>
         <a href="/call/random-call-id" class="test-button">🎥 Random Call (/call/random-call-id)</a>
+        <a href="/stream-video-test" class="test-button">🧪 Stream Video SDK Test</a>
     </div>
 
     <div class="debug-section">
@@ -220,6 +222,42 @@
             } catch (error) {
                 log(`❌ Error testing specific call: ${error.message}`, 'error');
                 addTestResult(`❌ Error testing specific call: ${error.message}`, 'error');
+            }
+        }
+
+        async function testStreamVideoSDK() {
+            log('Testing Stream Video SDK availability...', 'info');
+            
+            try {
+                // Test if we can access the main app and check for Stream Video SDK
+                const response = await fetch('/');
+                if (response.ok) {
+                    const html = await response.text();
+                    
+                    // Check if Stream Video SDK CSS is being loaded
+                    if (html.includes('stream-io/video-react-sdk')) {
+                        log('✅ Stream Video SDK CSS detected in main app', 'success');
+                        addTestResult('✅ Stream Video SDK CSS detected', 'success');
+                    } else {
+                        log('⚠️ Stream Video SDK CSS not detected in main app', 'warning');
+                        addTestResult('⚠️ Stream Video SDK CSS not detected', 'warning');
+                    }
+                    
+                    // Check if React components are available
+                    if (html.includes('react')) {
+                        log('✅ React detected in main app', 'success');
+                        addTestResult('✅ React detected', 'success');
+                    } else {
+                        log('⚠️ React not detected in main app', 'warning');
+                        addTestResult('⚠️ React not detected', 'warning');
+                    }
+                } else {
+                    log(`❌ Main app not accessible: ${response.status}`, 'error');
+                    addTestResult(`❌ Main app not accessible: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing Stream Video SDK: ${error.message}`, 'error');
+                addTestResult(`❌ Error testing Stream Video SDK: ${error.message}`, 'error');
             }
         }
 

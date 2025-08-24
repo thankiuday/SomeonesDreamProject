@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +22,61 @@ import BackButton from "../components/BackButton";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
+// Error Boundary Component
+class VideoCallErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("🎥 Video Call Error Boundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-screen flex flex-col items-center justify-center bg-base-100 p-4">
+          <div className="card bg-error/10 p-4 sm:p-8 text-center max-w-md w-full">
+            <h3 className="font-semibold text-lg mb-4 text-error">Video Call Error</h3>
+            <p className="text-error-content opacity-70 mb-6 text-sm sm:text-base">
+              Something went wrong with the video call component.
+            </p>
+            <details className="mb-4 text-left">
+              <summary className="cursor-pointer text-sm text-error-content opacity-70 mb-2">
+                Error Details
+              </summary>
+              <pre className="text-xs bg-base-200 p-2 rounded overflow-auto max-h-32">
+                {this.state.error?.toString()}
+              </pre>
+            </details>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => window.location.reload()}
+                className="btn btn-error btn-outline"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.history.back()}
+                className="btn btn-ghost"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const CallPage = () => {
   const { id: callId } = useParams();
   const navigate = useNavigate();
@@ -30,6 +85,7 @@ const CallPage = () => {
   const [isConnecting, setIsConnecting] = useState(true);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState({});
+  const [componentLoaded, setComponentLoaded] = useState(false);
 
   const { authUser, isLoading: authLoading } = useAuthUser();
 
@@ -40,6 +96,20 @@ const CallPage = () => {
     retry: 3,
     retryDelay: 1000,
   });
+
+  // Immediate debugging on component mount
+  useEffect(() => {
+    console.log("🎥 CallPage Component Mounted");
+    console.log("🎥 Initial State:", {
+      callId,
+      authUser: authUser ? { id: authUser._id, name: authUser.fullName, role: authUser.role } : null,
+      STREAM_API_KEY: !!STREAM_API_KEY,
+      authLoading,
+      tokenLoading
+    });
+    
+    setComponentLoaded(true);
+  }, []);
 
   useEffect(() => {
     const initCall = async () => {
@@ -287,65 +357,82 @@ const CallPage = () => {
     );
   }
 
+  // Show component loading state
+  if (!componentLoaded) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-base-100 p-4">
+        <div className="text-center">
+          <PageLoader />
+          <p className="mt-4 text-base-content opacity-70 text-sm sm:text-base">Loading video call component...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-screen flex flex-col items-center justify-center bg-base-100">
-      <div className="relative w-full h-full">
-        {client && call ? (
-          <StreamVideo client={client}>
-            <StreamCall call={call}>
-              <CallContent />
-            </StreamCall>
-          </StreamVideo>
-        ) : (
-          <div className="flex items-center justify-center h-full p-4">
-            <div className="absolute top-6 left-6 z-10">
-              <BackButton 
-                className="hover:bg-base-200/50 rounded-full p-2 transition-all duration-300 shadow-lg" 
-                variant="outline"
-              />
-            </div>
-            <div className="card bg-base-200 p-4 sm:p-8 text-center max-w-md w-full">
-              <h3 className="font-semibold text-lg mb-4">Call Not Available</h3>
-              <p className="text-base-content opacity-70 mb-6 text-sm sm:text-base">
-                Could not initialize call. Please refresh or try again later.
-              </p>
-              
-              {/* Debug info for development */}
-              {process.env.NODE_ENV === 'development' && (
-                <details className="mb-4 text-left">
-                  <summary className="cursor-pointer text-sm text-base-content opacity-70 mb-2">
-                    Debug Info (Development)
-                  </summary>
-                  <pre className="text-xs bg-base-300 p-2 rounded overflow-auto max-h-32">
-                    {JSON.stringify({
-                      hasClient: !!client,
-                      hasCall: !!call,
-                      callId,
-                      authUser: authUser ? { id: authUser._id, role: authUser.role } : null
-                    }, null, 2)}
-                  </pre>
-                </details>
-              )}
-              
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="btn btn-primary"
-                >
-                  Refresh
-                </button>
-                <button
-                  onClick={() => navigate("/")}
-                  className="btn btn-ghost"
-                >
-                  Go Home
-                </button>
+    <VideoCallErrorBoundary>
+      <div className="h-screen flex flex-col items-center justify-center bg-base-100">
+        <div className="relative w-full h-full">
+          {client && call ? (
+            <StreamVideo client={client}>
+              <StreamCall call={call}>
+                <CallContent />
+              </StreamCall>
+            </StreamVideo>
+          ) : (
+            <div className="flex items-center justify-center h-full p-4">
+              <div className="absolute top-6 left-6 z-10">
+                <BackButton 
+                  className="hover:bg-base-200/50 rounded-full p-2 transition-all duration-300 shadow-lg" 
+                  variant="outline"
+                />
+              </div>
+              <div className="card bg-base-200 p-4 sm:p-8 text-center max-w-md w-full">
+                <h3 className="font-semibold text-lg mb-4">Call Not Available</h3>
+                <p className="text-base-content opacity-70 mb-6 text-sm sm:text-base">
+                  Could not initialize call. Please refresh or try again later.
+                </p>
+                
+                {/* Debug info for development */}
+                {process.env.NODE_ENV === 'development' && (
+                  <details className="mb-4 text-left">
+                    <summary className="cursor-pointer text-sm text-base-content opacity-70 mb-2">
+                      Debug Info (Development)
+                    </summary>
+                    <pre className="text-xs bg-base-300 p-2 rounded overflow-auto max-h-32">
+                      {JSON.stringify({
+                        hasClient: !!client,
+                        hasCall: !!call,
+                        callId,
+                        authUser: authUser ? { id: authUser._id, role: authUser.role } : null,
+                        componentLoaded,
+                        isConnecting,
+                        error: error || null
+                      }, null, 2)}
+                    </pre>
+                  </details>
+                )}
+                
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="btn btn-primary"
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    onClick={() => navigate("/")}
+                    className="btn btn-ghost"
+                  >
+                    Go Home
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </VideoCallErrorBoundary>
   );
 };
 

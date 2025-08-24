@@ -84,11 +84,15 @@ app.get('/api/health', (req, res) => {
 // Production static files
 if (process.env.NODE_ENV === "production") {
   // Serve static files from the frontend build
-  app.use(express.static(path.join(__dirname, "../../frontend/dist")));
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-  // Handle all other routes by serving the React app
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
+  // Handle all other routes by serving the React app (but not API routes)
+  app.get("*", (req, res, next) => {
+    // Skip API routes - let them be handled by the API middleware or 404 handler
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
   });
 }
 

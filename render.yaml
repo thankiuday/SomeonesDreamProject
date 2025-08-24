@@ -44,5 +44,11 @@ services:
     autoDeploy: true
     routes:
       - type: rewrite
+        source: "/call/*"
+        destination: "/index.html"
+      - type: rewrite
+        source: "/chat/*"
+        destination: "/index.html"
+      - type: rewrite
         source: "/*"
         destination: "/index.html"

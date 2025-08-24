@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/call/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/chat/(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

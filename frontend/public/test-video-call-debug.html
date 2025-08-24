@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call Debug - COCOON</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+            background: #f8f9fa;
+        }
+        .log-error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .log-success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-section">
+        <h1>🎥 Video Call Debug Tool</h1>
+        <p>This tool helps debug video call issues and test functionality.</p>
+    </div>
+
+    <div class="debug-section">
+        <h2>📊 Environment Check</h2>
+        <div id="environment-info">
+            <p><strong>Current URL:</strong> <span id="current-url"></span></p>
+            <p><strong>User Agent:</strong> <span id="user-agent"></span></p>
+            <p><strong>Protocol:</strong> <span id="protocol"></span></p>
+            <p><strong>Host:</strong> <span id="host"></span></p>
+            <p><strong>Environment:</strong> <span id="environment"></span></p>
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🧪 Video Call Tests</h2>
+        <p>Test different video call scenarios:</p>
+        
+        <button class="test-button" onclick="testVideoCallAccess()">🔍 Test Video Call Access</button>
+        <button class="test-button" onclick="testStreamAPI()">🔑 Test Stream API</button>
+        <button class="test-button" onclick="testCallCreation()">🎥 Test Call Creation</button>
+        <button class="test-button" onclick="testSpecificCall()">🎯 Test Specific Call</button>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔧 Manual Tests</h2>
+        <p>Try these specific video call links:</p>
+        
+        <a href="/call/test-call-123" class="test-button">🎥 Test Call (/call/test-call-123)</a>
+        <a href="/call/faculty-math01-1756030850537" class="test-button">🎥 Faculty Call (/call/faculty-math01-1756030850537)</a>
+        <a href="/call/student-call-456" class="test-button">🎥 Student Call (/call/student-call-456)</a>
+        <a href="/call/random-call-id" class="test-button">🎥 Random Call (/call/random-call-id)</a>
+    </div>
+
+    <div class="debug-section">
+        <h2>📝 Debug Log</h2>
+        <div id="debug-log">
+            <p>Debug information will appear here...</p>
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔍 Console Logs</h2>
+        <p>Check your browser's console (F12) for detailed logs.</p>
+        <div id="console-logs"></div>
+    </div>
+
+    <script>
+        // Display environment info
+        document.getElementById('current-url').textContent = window.location.href;
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+        document.getElementById('protocol').textContent = window.location.protocol;
+        document.getElementById('host').textContent = window.location.host;
+        document.getElementById('environment').textContent = window.location.hostname.includes('localhost') ? 'Development' : 'Production';
+
+        const debugLog = document.getElementById('debug-log');
+        const testResults = document.getElementById('test-results');
+        const consoleLogs = document.getElementById('console-logs');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            debugLog.appendChild(logEntry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        function addTestResult(message, type = 'info') {
+            const result = document.createElement('div');
+            result.className = `status ${type}`;
+            result.textContent = message;
+            testResults.appendChild(result);
+        }
+
+        async function testVideoCallAccess() {
+            log('Testing video call access...', 'info');
+            
+            try {
+                const response = await fetch('/call/test-call-123');
+                if (response.ok) {
+                    log('✅ Video call route accessible', 'success');
+                    addTestResult('✅ Video call route accessible', 'success');
+                } else {
+                    log(`❌ Video call route returned ${response.status}`, 'error');
+                    addTestResult(`❌ Video call route returned ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error accessing video call route: ${error.message}`, 'error');
+                addTestResult(`❌ Error accessing video call route: ${error.message}`, 'error');
+            }
+        }
+
+        async function testStreamAPI() {
+            log('Testing Stream API configuration...', 'info');
+            
+            try {
+                const response = await fetch('/api/chat/token', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Stream API token endpoint accessible', 'success');
+                    addTestResult('✅ Stream API token endpoint accessible', 'success');
+                } else {
+                    log(`❌ Stream API token endpoint returned ${response.status}`, 'error');
+                    addTestResult(`❌ Stream API token endpoint returned ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing Stream API: ${error.message}`, 'error');
+                addTestResult(`❌ Error testing Stream API: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCallCreation() {
+            log('Testing call creation...', 'info');
+            
+            // Test if we can access the main app
+            try {
+                const response = await fetch('/');
+                if (response.ok) {
+                    log('✅ Main app accessible - call creation should work', 'success');
+                    addTestResult('✅ Main app accessible - call creation should work', 'success');
+                } else {
+                    log(`❌ Main app not accessible: ${response.status}`, 'error');
+                    addTestResult(`❌ Main app not accessible: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing call creation: ${error.message}`, 'error');
+                addTestResult(`❌ Error testing call creation: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSpecificCall() {
+            log('Testing specific call ID...', 'info');
+            
+            const testCallId = 'faculty-math01-1756030850537';
+            try {
+                const response = await fetch(`/call/${testCallId}`);
+                if (response.ok) {
+                    log(`✅ Specific call ${testCallId} accessible`, 'success');
+                    addTestResult(`✅ Specific call ${testCallId} accessible`, 'success');
+                } else {
+                    log(`❌ Specific call ${testCallId} returned ${response.status}`, 'error');
+                    addTestResult(`❌ Specific call ${testCallId} returned ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing specific call: ${error.message}`, 'error');
+                addTestResult(`❌ Error testing specific call: ${error.message}`, 'error');
+            }
+        }
+
+        // Test sessionStorage functionality
+        try {
+            sessionStorage.setItem('test', 'working');
+            sessionStorage.removeItem('test');
+            log('✅ sessionStorage is working', 'success');
+        } catch (error) {
+            log(`❌ sessionStorage error: ${error.message}`, 'error');
+        }
+
+        // Test localStorage functionality
+        try {
+            localStorage.setItem('test', 'working');
+            localStorage.removeItem('test');
+            log('✅ localStorage is working', 'success');
+        } catch (error) {
+            log(`❌ localStorage error: ${error.message}`, 'error');
+        }
+
+        // Initialize
+        log('Debug tool initialized', 'info');
+        
+        // Auto-run basic tests
+        setTimeout(() => {
+            testVideoCallAccess();
+            testStreamAPI();
+            testCallCreation();
+        }, 1000);
+
+        // Capture console logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[LOG] ${args.join(' ')}`;
+            consoleLogs.appendChild(logEntry);
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry log-error';
+            logEntry.textContent = `[ERROR] ${args.join(' ')}`;
+            consoleLogs.appendChild(logEntry);
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry log-warning';
+            logEntry.textContent = `[WARN] ${args.join(' ')}`;
+            consoleLogs.appendChild(logEntry);
+        };
+    </script>
+</body>
+</html>

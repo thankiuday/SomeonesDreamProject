@@ -1,4 +1,6 @@
 import { Route, Routes } from "react-router";
+import { useEffect } from "react";
+import { useNavigate } from "react-router";
 
 import HomePage from "./pages/HomePage.jsx";
 import SignUpPage from "./pages/SignUpPage.jsx";
@@ -23,11 +25,24 @@ import Layout from "./components/Layout.jsx";
 import { useThemeStore } from "./store/useThemeStore.js";
 
 const App = () => {
-  const { isLoading } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
   const { theme } = useThemeStore();
+  const navigate = useNavigate();
   
   // Check if user has logged out
   const hasLoggedOut = localStorage.getItem('hasLoggedOut') === 'true';
+
+  // Handle intended path from 404 page
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      const intendedPath = sessionStorage.getItem('intendedPath');
+      if (intendedPath && intendedPath !== '/') {
+        console.log('Redirecting to intended path:', intendedPath);
+        sessionStorage.removeItem('intendedPath');
+        navigate(intendedPath);
+      }
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   // Show loading spinner while auth is being checked, but not if user has logged out
   if (isLoading && !hasLoggedOut) {

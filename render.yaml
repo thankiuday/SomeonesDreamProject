@@ -42,7 +42,3 @@ services:
       - key: VITE_STREAM_API_KEY
         sync: false
     autoDeploy: true
-    routes:
-      - type: rewrite
-        source: "/*"
-        destination: "/index.html"

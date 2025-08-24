@@ -594,3 +594,55 @@ export async function getLinkedAccounts(req, res) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
+
+export async function updateTheme(req, res) {
+  try {
+    const { theme } = req.body;
+    const userId = req.user.id;
+
+    // Validate theme - accept all available DaisyUI themes
+    const validThemes = [
+      'light', 'dark', 'night', 'cupcake', 'forest', 'bumblebee', 'emerald', 
+      'corporate', 'synthwave', 'retro', 'cyberpunk', 'valentine', 'halloween', 
+      'garden', 'aqua', 'lofi', 'pastel', 'fantasy', 'wireframe', 'black', 
+      'luxury', 'dracula', 'cmyk', 'autumn', 'business', 'acid', 'lemonade', 
+      'coffee', 'winter', 'dim', 'nord', 'sunset'
+    ];
+    
+    if (!validThemes.includes(theme)) {
+      return res.status(400).json({ 
+        message: `Invalid theme. Must be one of: ${validThemes.join(', ')}` 
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { theme },
+      { new: true, runValidators: true }
+    ).select('theme');
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ theme: user.theme });
+  } catch (error) {
+    console.error("Error in updateTheme controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function getTheme(req, res) {
+  try {
+    const user = await User.findById(req.user.id).select('theme');
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ theme: user.theme });
+  } catch (error) {
+    console.error("Error in getTheme controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}

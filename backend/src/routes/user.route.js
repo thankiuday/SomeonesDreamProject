@@ -15,6 +15,8 @@ import {
   generateLinkCode,
   useLinkCode,
   getLinkedAccounts,
+  updateTheme,
+  getTheme,
 } from "../controllers/user.controller.js";
 import {
   validateFriendRequest,
@@ -51,5 +53,9 @@ router.get("/children/:childId/conversations", protectRole(["parent"]), validate
 router.post("/generate-link-code", protectRole(["parent"]), validateGenerateLinkCode, generateLinkCode);
 router.post("/use-link-code", protectRole(["student"]), validateUseLinkCode, useLinkCode);
 router.get("/linked-accounts", getLinkedAccounts);
+
+// Theme management routes
+router.get("/theme", getTheme);
+router.put("/theme", updateTheme);
 
 export default router;

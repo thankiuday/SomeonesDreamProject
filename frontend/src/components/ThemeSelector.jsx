@@ -1,15 +1,23 @@
 import { PaletteIcon } from "lucide-react";
-import { useThemeStore } from "../store/useThemeStore";
+import { useTheme } from "../hooks/useTheme";
 import { THEMES } from "../constants";
 
 const ThemeSelector = () => {
-  const { theme, setTheme } = useThemeStore();
+  const { theme, changeTheme, isUpdatingTheme } = useTheme();
 
   return (
     <div className="dropdown dropdown-end">
       {/* DROPDOWN TRIGGER */}
-      <button tabIndex={0} className="btn btn-ghost btn-circle btn-sm sm:btn-md hover:bg-base-300/50">
-        <PaletteIcon className="size-4 sm:size-5" />
+      <button 
+        tabIndex={0} 
+        className="btn btn-ghost btn-circle btn-sm sm:btn-md hover:bg-base-300/50"
+        disabled={isUpdatingTheme}
+      >
+        {isUpdatingTheme ? (
+          <div className="loading loading-spinner loading-sm"></div>
+        ) : (
+          <PaletteIcon className="size-4 sm:size-5" />
+        )}
       </button>
 
       <div
@@ -30,9 +38,14 @@ const ThemeSelector = () => {
                   : "hover:bg-base-content/5"
               }
             `}
-              onClick={() => setTheme(themeOption.name)}
+              onClick={() => changeTheme(themeOption.name)}
+              disabled={isUpdatingTheme}
             >
-              <PaletteIcon className="size-3 sm:size-4" />
+              {isUpdatingTheme && theme === themeOption.name ? (
+                <div className="loading loading-spinner loading-xs"></div>
+              ) : (
+                <PaletteIcon className="size-3 sm:size-4" />
+              )}
               <span className="text-xs sm:text-sm font-medium truncate">{themeOption.label}</span>
               {/* THEME PREVIEW COLORS */}
               <div className="ml-auto flex gap-1">

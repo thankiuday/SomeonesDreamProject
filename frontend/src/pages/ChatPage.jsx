@@ -3,6 +3,7 @@ import { useParams } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
 import { useQuery } from "@tanstack/react-query";
 import { getStreamToken } from "../lib/api";
+import { useThemeStore } from "../store/useThemeStore";
 
 import {
   Channel,
@@ -14,6 +15,7 @@ import {
   Window,
 } from "stream-chat-react";
 import { StreamChat } from "stream-chat";
+import "stream-chat-react/dist/css/v2/index.css";
 import toast from "react-hot-toast";
 
 import ChatLoader from "../components/ChatLoader";
@@ -24,6 +26,7 @@ const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
 const ChatPage = () => {
   const { id: targetUserId } = useParams();
+  const { theme } = useThemeStore();
 
   const [chatClient, setChatClient] = useState(null);
   const [channel, setChannel] = useState(null);
@@ -32,6 +35,57 @@ const ChatPage = () => {
   const [isOnline, setIsOnline] = useState(false);
 
   const { authUser } = useAuthUser();
+
+  // Theme-based color scheme
+  const getThemeColors = () => {
+    switch (theme) {
+      case "light":
+        return {
+          background: "bg-base-100",
+          headerBg: "bg-primary",
+          headerText: "text-primary-content",
+          chatBg: "bg-base-200",
+          messageBg: "bg-base-100",
+          messageBubble: "bg-primary text-primary-content",
+          messageBubbleMe: "bg-secondary text-secondary-content",
+          inputBg: "bg-base-100",
+          inputBorder: "border-base-300",
+          sendButtonBg: "bg-primary",
+          sendButtonHover: "hover:bg-primary-focus"
+        };
+      case "dark":
+        return {
+          background: "bg-base-100",
+          headerBg: "bg-primary",
+          headerText: "text-primary-content",
+          chatBg: "bg-base-200",
+          messageBg: "bg-base-100",
+          messageBubble: "bg-primary text-primary-content",
+          messageBubbleMe: "bg-secondary text-secondary-content",
+          inputBg: "bg-base-100",
+          inputBorder: "border-base-300",
+          sendButtonBg: "bg-primary",
+          sendButtonHover: "hover:bg-primary-focus"
+        };
+      case "night":
+      default:
+        return {
+          background: "bg-base-100",
+          headerBg: "bg-primary",
+          headerText: "text-primary-content",
+          chatBg: "bg-base-200",
+          messageBg: "bg-base-100",
+          messageBubble: "bg-primary text-primary-content",
+          messageBubbleMe: "bg-secondary text-secondary-content",
+          inputBg: "bg-base-100",
+          inputBorder: "border-base-300",
+          sendButtonBg: "bg-primary",
+          sendButtonHover: "hover:bg-primary-focus"
+        };
+    }
+  };
+
+  const themeColors = getThemeColors();
 
   const { data: tokenData } = useQuery({
     queryKey: ["streamToken"],
@@ -164,75 +218,99 @@ const ChatPage = () => {
 
   if (loading || !chatClient || !channel) return <ChatLoader />;
 
+  // Get text color based on theme
+  const getTextColor = () => {
+    switch (theme) {
+      case 'light':
+        return '#1f2937'; // Dark text for light theme
+      case 'dark':
+      case 'night':
+        return '#f9fafb'; // Light text for dark themes
+      default:
+        return '#1f2937';
+    }
+  };
+
+  const textColor = getTextColor();
+
   return (
-    <div className="h-[calc(100vh-4rem)] sm:h-[93vh] bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-900 dark:to-gray-800">
+    <div className={`w-full ${themeColors.background} chat-theme-${theme}`} style={{ height: 'calc(100vh - 64px)', minHeight: 'calc(100vh - 64px)', position: 'absolute', top: '64px', left: 0, right: 0, bottom: 0 }}>
+      <style>
+        {`
+          .chat-theme-${theme} .str-chat__message-text,
+          .chat-theme-${theme} .str-chat__message-text * {
+            color: ${textColor} !important;
+          }
+          .chat-theme-${theme} .str-chat__message * {
+            color: ${textColor} !important;
+          }
+          
+          /* Input area theme colors */
+          .chat-theme-${theme} .str-chat__input,
+          .chat-theme-${theme} .str-chat__input-flat {
+            background-color: ${theme === 'light' ? '#ffffff' : theme === 'dark' ? '#374151' : '#1f2937'} !important;
+            border-top: 1px solid ${theme === 'light' ? '#e5e7eb' : theme === 'dark' ? '#4b5563' : '#374151'} !important;
+          }
+          
+          .chat-theme-${theme} .str-chat__input-flat--textarea {
+            background-color: ${theme === 'light' ? '#f9fafb' : theme === 'dark' ? '#4b5563' : '#374151'} !important;
+            color: ${theme === 'light' ? '#1f2937' : '#f9fafb'} !important;
+            border: 1px solid ${theme === 'light' ? '#e5e7eb' : theme === 'dark' ? '#6b7280' : '#4b5563'} !important;
+          }
+          
+          .chat-theme-${theme} .str-chat__input-flat--file-upload {
+            background-color: ${theme === 'light' ? '#f9fafb' : theme === 'dark' ? '#4b5563' : '#374151'} !important;
+            color: ${theme === 'light' ? '#1f2937' : '#f9fafb'} !important;
+            border: 1px solid ${theme === 'light' ? '#e5e7eb' : theme === 'dark' ? '#6b7280' : '#4b5563'} !important;
+          }
+          
+          .chat-theme-${theme} .str-chat__input-flat--actions button {
+            background-color: ${theme === 'light' ? '#f9fafb' : theme === 'dark' ? '#4b5563' : '#374151'} !important;
+            color: ${theme === 'light' ? '#1f2937' : '#f9fafb'} !important;
+            border: 1px solid ${theme === 'light' ? '#e5e7eb' : theme === 'dark' ? '#6b7280' : '#4b5563'} !important;
+          }
+          
+          .chat-theme-${theme} .str-chat__input-flat--textarea::placeholder {
+            color: ${theme === 'light' ? '#6b7280' : '#9ca3af'} !important;
+          }
+        `}
+      </style>
       <Chat client={chatClient}>
         <Channel channel={channel}>
-          <div className="w-full relative h-full flex flex-col">
-            {/* WhatsApp-style Header */}
-            <div className="bg-green-600 dark:bg-green-700 text-white px-4 py-3 flex items-center justify-between shadow-lg relative">
-              <div className="flex items-center gap-3">
-                <BackButton 
-                  variant="primary" 
-                  className="text-white hover:text-white/80 hover:bg-white/10 rounded-full p-2 flex-shrink-0"
-                  showText={false}
-                />
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {targetUser?.profilePic ? (
-                    <img 
-                      src={targetUser.profilePic} 
-                      alt={targetUser.fullName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-lg font-semibold">
-                      {targetUser?.fullName?.charAt(0) || 'U'}
-                    </span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-lg truncate">
-                    {targetUser?.fullName || 'Unknown User'}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isOnline ? 'bg-green-400' : 'bg-gray-400'}`}></div>
-                    <p className="text-sm opacity-90 truncate">
-                      {isOnline ? 'Online' : 'Offline'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="w-full h-full flex flex-col">
+            {/* Custom Header with Stream Chat Header + Call Button */}
+            <div className={`${themeColors.headerBg} ${themeColors.headerText} px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between shadow-lg flex-shrink-0 sticky top-0 z-10`}>
+              <ChannelHeader 
+                className="!bg-transparent !border-none !p-0 !flex-1 !min-w-0"
+              />
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
                 <CallButton handleVideoCall={handleVideoCall} />
               </div>
             </div>
-
+            
             {/* Chat Window */}
             <div className="flex-1 relative overflow-hidden">
-              <Window className="h-full bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-900 dark:to-gray-800">
+              <Window className={`h-full ${themeColors.chatBg} overflow-y-auto`} style={{ height: '100%' }}>
                 <MessageList 
-                  className="!p-2 sm:!p-4 !bg-transparent"
-                  messageStyles={{
-                    message: 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700',
-                    messageBubble: 'bg-blue-500 text-white rounded-lg shadow-sm',
-                    messageBubbleMe: 'bg-green-500 text-white rounded-lg shadow-sm',
-                  }}
+                  className="!p-1 sm:!p-4 !bg-transparent"
                 />
                 <MessageInput 
                   focus 
-                  className="!p-3 sm:!p-4 !bg-white dark:!bg-gray-800 !border-t !border-gray-200 dark:!border-gray-700"
+                  className={`!p-1 sm:!p-4 ${themeColors.inputBg} !border-t ${themeColors.inputBorder} input-theme-${theme}`}
                   placeholder="Type a message..."
                   sendButtonStyle={{
-                    backgroundColor: '#22c55e',
-                    color: 'white',
+                    backgroundColor: 'hsl(var(--p))', // Use CSS variable for primary color
+                    color: 'hsl(var(--pc))', // Use CSS variable for primary content color
                     borderRadius: '50%',
-                    padding: '8px',
+                    padding: '6px',
+                    width: '32px',
+                    height: '32px',
                   }}
                 />
               </Window>
             </div>
           </div>
-          <Thread className="!w-full sm:!w-80 !bg-white dark:!bg-gray-800" />
+          <Thread className={`!w-full sm:!w-80 ${themeColors.messageBg}`} />
         </Channel>
       </Chat>
     </div>

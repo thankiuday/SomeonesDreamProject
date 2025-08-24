@@ -208,6 +208,19 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    
+    // User preferences
+    theme: {
+      type: String,
+      enum: [
+        'light', 'dark', 'night', 'cupcake', 'forest', 'bumblebee', 'emerald', 
+        'corporate', 'synthwave', 'retro', 'cyberpunk', 'valentine', 'halloween', 
+        'garden', 'aqua', 'lofi', 'pastel', 'fantasy', 'wireframe', 'black', 
+        'luxury', 'dracula', 'cmyk', 'autumn', 'business', 'acid', 'lemonade', 
+        'coffee', 'winter', 'dim', 'nord', 'sunset'
+      ],
+      default: 'night',
+    },
   },
   { timestamps: true }
 );

@@ -102,7 +102,8 @@ export const AuthProvider = ({ children }) => {
       isPublicRoute,
       isLoading,
       isInitialized,
-      hasLoggedOut
+      hasLoggedOut,
+      authUser: authUser ? { role: authUser.role, isOnboarded: authUser.isOnboarded } : null
     });
 
     // If user has logged out and is not on login/signup page, redirect to login
@@ -132,10 +133,16 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // If authenticated and onboarded, but accessing login/signup
+    // If authenticated but not onboarded and on login/signup page, redirect to onboarding
+    if (isAuthenticated && !isOnboarded && (pathname === "/login" || pathname === "/signup")) {
+      console.log("📝 Redirecting to onboarding - user is authenticated but not onboarded");
+      navigate("/onboarding", { replace: true });
+      return;
+    }
+
+    // If authenticated and onboarded, redirect from login/signup pages
     if (isAuthenticated && isOnboarded && (pathname === "/login" || pathname === "/signup")) {
-      console.log("🏠 Redirecting to dashboard - already authenticated");
-      // Clear logout flag when user successfully logs in
+      console.log("🏠 Redirecting to dashboard - user is authenticated and onboarded");
       clearLogoutFlag();
       navigate(getDashboardPath(), { replace: true });
       return;

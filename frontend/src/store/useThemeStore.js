@@ -6,4 +6,11 @@ export const useThemeStore = create((set) => ({
     localStorage.setItem("streamify-theme", theme);
     set({ theme });
   },
+  // Function to sync with database theme
+  syncThemeFromDB: (dbTheme) => {
+    if (dbTheme && dbTheme !== localStorage.getItem("streamify-theme")) {
+      localStorage.setItem("streamify-theme", dbTheme);
+      set({ theme: dbTheme });
+    }
+  },
 }));

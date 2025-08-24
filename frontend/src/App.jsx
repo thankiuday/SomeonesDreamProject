@@ -20,18 +20,24 @@ import { Toaster } from "react-hot-toast";
 
 import PageLoader from "./components/PageLoader.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import AuthDebug from "./components/AuthDebug.jsx";
 import { useAuth } from "./contexts/AuthContext.jsx";
 import Layout from "./components/Layout.jsx";
-import { useThemeStore } from "./store/useThemeStore.js";
+import { useTheme } from "./hooks/useTheme.js";
 
 const App = () => {
   const { isLoading, isAuthenticated } = useAuth();
-  const { theme } = useThemeStore();
+  const { theme, loadThemeFromDB } = useTheme();
   const navigate = useNavigate();
   
   // Check if user has logged out
   const hasLoggedOut = localStorage.getItem('hasLoggedOut') === 'true';
+
+  // Load theme from database when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      loadThemeFromDB();
+    }
+  }, [isAuthenticated, isLoading, loadThemeFromDB]);
 
   // Handle intended path from 404 page
   useEffect(() => {
@@ -172,7 +178,6 @@ const App = () => {
       </Routes>
 
       <Toaster />
-      <AuthDebug />
     </div>
   );
 };

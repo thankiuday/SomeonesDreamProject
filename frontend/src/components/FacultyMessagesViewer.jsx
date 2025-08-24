@@ -85,8 +85,57 @@ const FacultyMessagesViewer = () => {
     document.body.removeChild(link);
   };
 
-  const handleVideoCallClick = (url) => {
-    window.open(url, '_blank');
+  const handleVideoCallClick = (messageContent) => {
+    try {
+      console.log("🎥 Video call message content:", messageContent);
+      
+      // Extract the video call URL from the message content
+      let videoCallUrl = null;
+      
+      // Try different patterns to extract the URL
+      if (messageContent.includes("Join the video call: ")) {
+        videoCallUrl = messageContent.split("Join the video call: ")[1];
+      } else if (messageContent.includes("Join me here: ")) {
+        videoCallUrl = messageContent.split("Join me here: ")[1];
+      } else if (messageContent.includes("http")) {
+        // Extract any URL from the content
+        const urlMatch = messageContent.match(/(https?:\/\/[^\s]+)/);
+        if (urlMatch) {
+          videoCallUrl = urlMatch[1];
+        }
+      }
+      
+      console.log("🎥 Extracted video call URL:", videoCallUrl);
+      
+      if (!videoCallUrl) {
+        console.error("❌ Could not extract video call URL from message content");
+        toast.error("Could not find video call URL in the message");
+        return;
+      }
+      
+      // Clean up the URL (remove any trailing whitespace or newlines)
+      videoCallUrl = videoCallUrl.trim();
+      
+      // Validate the URL
+      try {
+        new URL(videoCallUrl);
+      } catch (urlError) {
+        console.error("❌ Invalid video call URL:", videoCallUrl);
+        toast.error("Invalid video call URL");
+        return;
+      }
+      
+      console.log("🎥 Opening video call URL:", videoCallUrl);
+      
+      // Open the video call in a new tab
+      window.open(videoCallUrl, '_blank');
+      
+      toast.success("Opening video call...");
+      
+    } catch (error) {
+      console.error("❌ Error handling video call click:", error);
+      toast.error("Failed to open video call");
+    }
   };
 
   if (isLoading) {
@@ -236,18 +285,56 @@ const FacultyMessagesViewer = () => {
                           {message.content}
                         </p>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-accent">
-                          <VideoIcon className="size-4" />
-                          <span className="text-sm font-medium">Video Call</span>
-                        </div>
-                        <button
-                          onClick={() => handleVideoCallClick(message.content.split("Join the video call: ")[1])}
-                          className="btn btn-accent btn-sm"
-                        >
-                          Join Call
-                        </button>
-                      </div>
+                      
+                      {/* Extract and display the video call URL */}
+                      {(() => {
+                        let videoCallUrl = null;
+                        if (message.content.includes("Join the video call: ")) {
+                          videoCallUrl = message.content.split("Join the video call: ")[1];
+                        } else if (message.content.includes("Join me here: ")) {
+                          videoCallUrl = message.content.split("Join me here: ")[1];
+                        } else if (message.content.includes("http")) {
+                          const urlMatch = message.content.match(/(https?:\/\/[^\s]+)/);
+                          if (urlMatch) {
+                            videoCallUrl = urlMatch[1];
+                          }
+                        }
+                        
+                        return videoCallUrl ? (
+                          <div className="bg-accent/10 p-3 rounded-lg border border-accent/20">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-accent">
+                                <VideoIcon className="size-4" />
+                                <span className="text-sm font-medium">Video Call URL</span>
+                              </div>
+                              <button
+                                onClick={() => handleVideoCallClick(message.content)}
+                                className="btn btn-accent btn-sm"
+                              >
+                                Join Call
+                              </button>
+                            </div>
+                            <div className="mt-2">
+                              <p className="text-xs text-accent/70 break-all">
+                                {videoCallUrl.trim()}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-accent">
+                              <VideoIcon className="size-4" />
+                              <span className="text-sm font-medium">Video Call</span>
+                            </div>
+                            <button
+                              onClick={() => handleVideoCallClick(message.content)}
+                              className="btn btn-accent btn-sm"
+                            >
+                              Join Call
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <div className="bg-base-200/50 p-4 rounded-xl">

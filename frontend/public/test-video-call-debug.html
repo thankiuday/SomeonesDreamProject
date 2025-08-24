@@ -91,6 +91,7 @@
         <button class="test-button" onclick="testCallCreation()">🎥 Test Call Creation</button>
         <button class="test-button" onclick="testSpecificCall()">🎯 Test Specific Call</button>
         <button class="test-button" onclick="testStreamVideoSDK()">📦 Test Stream Video SDK</button>
+        <button class="test-button" onclick="testVideoCallURLParsing()">🔗 Test URL Parsing</button>
         
         <div id="test-results"></div>
     </div>
@@ -261,6 +262,40 @@
             }
         }
 
+        async function testVideoCallURLParsing() {
+            log('Testing video call URL parsing...', 'info');
+            
+            // Test different message formats
+            const testMessages = [
+                "🎥 Faculty Video Call\n\nI've started a video call. Join me here: https://someonesdreamproject-1.onrender.com/call/faculty-math01-1756030850537",
+                "🎥 Video Call\n\nJoin the video call: https://someonesdreamproject-1.onrender.com/call/faculty-cs02-1756030031996",
+                "🎥 Test Call\n\nJoin me here: http://localhost:5173/call/test-call-123"
+            ];
+            
+            testMessages.forEach((message, index) => {
+                let videoCallUrl = null;
+                
+                if (message.includes("Join the video call: ")) {
+                    videoCallUrl = message.split("Join the video call: ")[1];
+                } else if (message.includes("Join me here: ")) {
+                    videoCallUrl = message.split("Join me here: ")[1];
+                } else if (message.includes("http")) {
+                    const urlMatch = message.match(/(https?:\/\/[^\s]+)/);
+                    if (urlMatch) {
+                        videoCallUrl = urlMatch[1];
+                    }
+                }
+                
+                if (videoCallUrl) {
+                    log(`✅ Test ${index + 1}: URL extracted successfully - ${videoCallUrl}`, 'success');
+                    addTestResult(`✅ Test ${index + 1}: URL extracted successfully`, 'success');
+                } else {
+                    log(`❌ Test ${index + 1}: Failed to extract URL`, 'error');
+                    addTestResult(`❌ Test ${index + 1}: Failed to extract URL`, 'error');
+                }
+            });
+        }
+
         // Test sessionStorage functionality
         try {
             sessionStorage.setItem('test', 'working');
@@ -287,6 +322,7 @@
             testVideoCallAccess();
             testStreamAPI();
             testCallCreation();
+            testVideoCallURLParsing();
         }, 1000);
 
         // Capture console logs

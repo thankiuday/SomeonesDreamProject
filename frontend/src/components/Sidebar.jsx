@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router";
-import useAuthUser from "../hooks/useAuthUser";
 import { BellIcon, HomeIcon, UsersIcon, GraduationCapIcon, ShieldIcon, UserIcon, MessageCircleIcon } from "lucide-react";
 import { useUnreadFacultyMessages } from "../hooks/useUnreadFacultyMessages";
 import Logo from "./Logo";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const Sidebar = ({ onMobileClose }) => {
-  const { authUser } = useAuthUser();
+  const { authUser } = useAuth();
   const location = useLocation();
   const currentPath = location.pathname;
   

@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router";
+import { Route, Routes } from "react-router";
 
 import HomePage from "./pages/HomePage.jsx";
 import SignUpPage from "./pages/SignUpPage.jsx";
@@ -16,188 +16,138 @@ import FacultyMessagesPage from "./pages/FacultyMessagesPage.jsx";
 import { Toaster } from "react-hot-toast";
 
 import PageLoader from "./components/PageLoader.jsx";
-import useAuthUser from "./hooks/useAuthUser.js";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import AuthDebug from "./components/AuthDebug.jsx";
+import { useAuth } from "./contexts/AuthContext.jsx";
 import Layout from "./components/Layout.jsx";
 import { useThemeStore } from "./store/useThemeStore.js";
 
 const App = () => {
-  const { isLoading, authUser, isAuthenticated, error } = useAuthUser();
+  const { isLoading } = useAuth();
   const { theme } = useThemeStore();
+  
+  // Check if user has logged out
+  const hasLoggedOut = localStorage.getItem('hasLoggedOut') === 'true';
 
-  const isOnboarded = authUser?.isOnboarded;
-
-  // Helper function to get the appropriate dashboard path based on user role
-  const getDashboardPath = () => {
-    if (!authUser?.role) return "/";
-    
-    switch (authUser.role) {
-      case "faculty":
-        return "/faculty-dashboard";
-      case "parent":
-        return "/parent-dashboard";
-      case "student":
-        return "/student-dashboard";
-      default:
-        return "/";
-    }
-  };
-
-  // Debug logging
-  console.log("App.jsx - isLoading:", isLoading);
-  console.log("App.jsx - authUser:", authUser);
-  console.log("App.jsx - isAuthenticated:", isAuthenticated);
-  console.log("App.jsx - isOnboarded:", isOnboarded);
-  console.log("App.jsx - error:", error);
-  console.log("App.jsx - current pathname:", window.location.pathname);
-
-  if (isLoading) return <PageLoader />;
+  // Show loading spinner while auth is being checked, but not if user has logged out
+  if (isLoading && !hasLoggedOut) {
+    return <PageLoader />;
+  }
 
   return (
     <div className="min-h-screen bg-base-100" data-theme={theme}>
       <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+
+        {/* Protected Routes */}
         <Route
           path="/"
           element={
-            isAuthenticated && isOnboarded ? (
+            <ProtectedRoute>
               <Layout showSidebar={true}>
                 <HomePage />
               </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
+            </ProtectedRoute>
           }
         />
-     {/* ADDED FRIENDS ROUTE */}
+
         <Route
           path="/friends"
           element={
-            isAuthenticated && isOnboarded ? (
+            <ProtectedRoute>
               <Layout showSidebar={true}>
                 <FriendsPage />
               </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
+            </ProtectedRoute>
           }
         />
-        {/* FACULTY DASHBOARD ROUTE */}
+
         <Route
           path="/faculty-dashboard"
           element={
-            isAuthenticated && isOnboarded && authUser?.role === "faculty" ? (
+            <ProtectedRoute requiredRole="faculty">
               <Layout showSidebar={true}>
                 <FacultyDashboard />
               </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : getDashboardPath()} />
-            )
+            </ProtectedRoute>
           }
         />
-        {/* PARENT DASHBOARD ROUTE */}
+
         <Route
           path="/parent-dashboard"
           element={
-            isAuthenticated && isOnboarded && authUser?.role === "parent" ? (
+            <ProtectedRoute requiredRole="parent">
               <Layout showSidebar={true}>
                 <ParentDashboard />
               </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : getDashboardPath()} />
-            )
+            </ProtectedRoute>
           }
         />
-        {/* STUDENT DASHBOARD ROUTE */}
+
         <Route
           path="/student-dashboard"
           element={
-            isAuthenticated && isOnboarded && authUser?.role === "student" ? (
+            <ProtectedRoute requiredRole="student">
               <Layout showSidebar={true}>
                 <StudentDashboard />
               </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : getDashboardPath()} />
-            )
+            </ProtectedRoute>
           }
         />
-        {/* FACULTY MESSAGES ROUTE */}
+
         <Route
           path="/faculty-messages"
           element={
-            isAuthenticated && isOnboarded && authUser?.role === "student" ? (
+            <ProtectedRoute requiredRole="student">
               <Layout showSidebar={true}>
                 <FacultyMessagesPage />
               </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : !isOnboarded ? "/onboarding" : getDashboardPath()} />
-            )
+            </ProtectedRoute>
           }
         />
-        <Route
-          path="/signup"
-          element={
-            !isAuthenticated ? <SignUpPage /> : <Navigate to={isOnboarded ? getDashboardPath() : "/onboarding"} />
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            !isAuthenticated ? <LoginPage /> : <Navigate to={isOnboarded ? getDashboardPath() : "/onboarding"} />
-          }
-        />
+
         <Route
           path="/notifications"
           element={
-            isAuthenticated && isOnboarded ? (
+            <ProtectedRoute>
               <Layout showSidebar={true}>
                 <NotificationsPage />
               </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
+            </ProtectedRoute>
           }
         />
+
         <Route
           path="/call/:id"
           element={
-            isAuthenticated && isOnboarded ? (
+            <ProtectedRoute>
               <CallPage />
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/chat/:id"
           element={
-            isAuthenticated && isOnboarded ? (
+            <ProtectedRoute>
               <Layout showSidebar={false}>
                 <ChatPage />
               </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
+            </ProtectedRoute>
           }
         />
 
-        <Route
-          path="/onboarding"
-          element={
-            isAuthenticated ? (
-              !isOnboarded ? (
-                <OnboardingPage />
-              ) : (
-                <Navigate to={getDashboardPath()} />
-              )
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
+        {/* Catch all route - redirect to login */}
+        <Route path="*" element={<LoginPage />} />
       </Routes>
 
       <Toaster />
+      <AuthDebug />
     </div>
   );
 };
+
 export default App;

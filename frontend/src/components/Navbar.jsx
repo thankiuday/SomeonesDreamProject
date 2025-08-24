@@ -1,35 +1,19 @@
 import { Link, useLocation } from "react-router";
-import useAuthUser from "../hooks/useAuthUser";
 import { BellIcon, LogOutIcon, MenuIcon } from "lucide-react";
 import ThemeSelector from "./ThemeSelector";
-import useLogout from "../hooks/useLogout";
 import useNotificationCount from "../hooks/useNotificationCount";
 import Logo from "./Logo";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const Navbar = ({ onMenuClick }) => {
-  const { authUser } = useAuthUser();
+  const { authUser, logout } = useAuth();
   const location = useLocation();
   const isChatPage = location.pathname?.startsWith("/chat");
-  const { logoutMutation, forceLogout, isPending } = useLogout();
   const { count } = useNotificationCount();
 
   const handleLogout = () => {
     console.log("🔘 Logout button clicked");
-    
-    // Use a timeout to ensure logout happens even if API is slow
-    const timeoutId = setTimeout(() => {
-      console.log("⏰ Logout timeout - forcing logout");
-      forceLogout();
-    }, 2000); // 2 second timeout
-    
-    logoutMutation(undefined, {
-      onSuccess: () => {
-        clearTimeout(timeoutId);
-      },
-      onError: () => {
-        clearTimeout(timeoutId);
-      }
-    });
+    logout();
   };
 
   return (
@@ -82,7 +66,6 @@ const Navbar = ({ onMenuClick }) => {
             <button 
               className="btn btn-ghost btn-circle btn-sm sm:btn-md" 
               onClick={handleLogout}
-              disabled={isPending}
               title="Logout"
             >
               <LogOutIcon className="h-5 w-5 sm:h-6 sm:w-6 text-base-content opacity-70" />

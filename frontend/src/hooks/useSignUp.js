@@ -9,6 +9,10 @@ const useSignUp = () => {
   const { mutate, isPending, error } = useMutation({
     mutationFn: signup,
     onSuccess: (data) => {
+      // Clear logout flag on successful signup
+      localStorage.removeItem('hasLoggedOut');
+      console.log("✅ Signup successful - logout flag cleared");
+      
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
       
       // Get user role from the response and redirect accordingly

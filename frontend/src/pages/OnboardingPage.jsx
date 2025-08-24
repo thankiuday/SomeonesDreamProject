@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useAuthUser from "../hooks/useAuthUser";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import { completeOnboarding } from "../lib/api";
 import { 
@@ -9,28 +10,43 @@ import {
   ShieldIcon, 
   GraduationCapIcon, 
   UsersIcon,
-  CameraIcon
+  CameraIcon,
+  UserIcon,
+  SchoolIcon
 } from "lucide-react";
 import Logo from "../components/Logo";
 
 const OnboardingPage = () => {
   const { authUser } = useAuthUser();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  // Determine user role
+  const userRole = authUser?.role || 'student';
 
   const [formState, setFormState] = useState({
-    // Essential Basic Information
+    // Basic Information (all roles)
     fullName: authUser?.fullName || "",
+    profilePic: authUser?.profilePic || "",
+    
+    // Student-specific fields
     age: "",
     grade: "",
     school: "",
-    profilePic: authUser?.profilePic || "",
-    
-    // Essential Safety Settings
     safetyLevel: "moderate",
     allowDirectMessages: true,
     allowGroupChats: true,
     
-    // Essential Emergency Contact
+    // Parent-specific fields
+    monitoringEnabled: true,
+    realTimeAlerts: true,
+    weeklyReports: true,
+    
+    // Faculty-specific fields
+    bio: "",
+    department: "",
+    
+    // Emergency Contact (mainly for students)
     emergencyContactName: "",
     emergencyContactPhone: "",
     emergencyContactRelationship: "",
@@ -42,16 +58,29 @@ const OnboardingPage = () => {
   const { mutate: onboardingMutation, isPending } = useMutation({
     mutationFn: completeOnboarding,
     onSuccess: () => {
-      toast.success("COCOON profile setup completed!");
+      const roleMessages = {
+        student: "Student profile setup completed!",
+        parent: "Parent profile setup completed!",
+        faculty: "Faculty profile setup completed!"
+      };
+      toast.success(roleMessages[userRole] || "Profile setup completed!");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
-      setValidationErrors({}); // Clear any previous errors
+      setValidationErrors({});
+      
+      // Redirect to appropriate dashboard based on role
+      const dashboardPaths = {
+        student: "/student-dashboard",
+        parent: "/parent-dashboard",
+        faculty: "/faculty-dashboard"
+      };
+      
+      const dashboardPath = dashboardPaths[userRole] || "/";
+      console.log(`🎯 Redirecting ${userRole} to ${dashboardPath} after onboarding`);
+      navigate(dashboardPath, { replace: true });
     },
     onError: (error) => {
       if (error.response?.data?.fieldErrors) {
-        // Set field-specific validation errors
         setValidationErrors(error.response.data.fieldErrors);
-        
-        // Show user-friendly message
         if (error.response.data.userMessage) {
           toast.error("Please fix the validation errors below");
         }
@@ -65,25 +94,27 @@ const OnboardingPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Clear previous validation errors
     setValidationErrors({});
     
-    // Client-side validation for required fields
+    // Role-specific validation
     const clientErrors = {};
     
+    // Basic validation for all roles
     if (!formState.fullName.trim()) {
       clientErrors.fullName = ["Full name is required"];
     }
     
-    if (!formState.emergencyContactName.trim()) {
-      clientErrors.emergencyContactName = ["Emergency contact name is required"];
+    // Student-specific validation
+    if (userRole === 'student') {
+      if (!formState.emergencyContactName.trim()) {
+        clientErrors.emergencyContactName = ["Emergency contact name is required"];
+      }
+      if (!formState.emergencyContactPhone.trim()) {
+        clientErrors.emergencyContactPhone = ["Emergency contact phone is required"];
+      }
     }
     
-    if (!formState.emergencyContactPhone.trim()) {
-      clientErrors.emergencyContactPhone = ["Emergency contact phone is required"];
-    }
-    
-    // Email is optional but if provided, should be valid
+    // Email validation if provided
     if (formState.emergencyContactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.emergencyContactEmail)) {
       clientErrors.emergencyContactEmail = ["Please provide a valid email address"];
     }
@@ -94,45 +125,70 @@ const OnboardingPage = () => {
       return;
     }
 
-    // Transform data for backend
+    // Transform data for backend based on role
     const onboardingData = {
       fullName: formState.fullName,
-      age: formState.age ? parseInt(formState.age) : null,
-      grade: formState.grade,
-      school: formState.school,
       profilePic: formState.profilePic,
-      
-      // Safety settings
-      safetyLevel: formState.safetyLevel,
-      communicationPreferences: {
-        allowDirectMessages: formState.allowDirectMessages,
-        allowGroupChats: formState.allowGroupChats,
-        allowFileSharing: false,
-        allowVideoCalls: false,
-      },
-      
-      // Monitoring settings (defaults)
-      monitoringSettings: {
-        aiAnalysisEnabled: true,
-        realTimeAlerts: true,
-        weeklyReports: true,
-        contentFiltering: true,
-      },
-      
-      // Emergency contact
-      emergencyContact: {
-        name: formState.emergencyContactName,
-        relationship: formState.emergencyContactRelationship,
-        phone: formState.emergencyContactPhone,
-        email: formState.emergencyContactEmail,
-      },
-      
-      // Default educational settings
-      academicSubjects: [],
-      interests: [],
-      dailyScreenTimeLimit: 120,
-      preferredStudyTimes: ["afternoon", "evening"],
     };
+
+    // Add role-specific data
+    if (userRole === 'student') {
+      Object.assign(onboardingData, {
+        age: formState.age ? parseInt(formState.age) : null,
+        grade: formState.grade,
+        school: formState.school,
+        safetyLevel: formState.safetyLevel,
+        communicationPreferences: {
+          allowDirectMessages: formState.allowDirectMessages,
+          allowGroupChats: formState.allowGroupChats,
+          allowFileSharing: false,
+          allowVideoCalls: false,
+        },
+        monitoringSettings: {
+          aiAnalysisEnabled: true,
+          realTimeAlerts: true,
+          weeklyReports: true,
+          contentFiltering: true,
+        },
+        emergencyContact: {
+          name: formState.emergencyContactName,
+          relationship: formState.emergencyContactRelationship,
+          phone: formState.emergencyContactPhone,
+          email: formState.emergencyContactEmail,
+        },
+        academicSubjects: [],
+        interests: [],
+        dailyScreenTimeLimit: 120,
+        preferredStudyTimes: ["afternoon", "evening"],
+      });
+    } else if (userRole === 'parent') {
+      Object.assign(onboardingData, {
+        monitoringSettings: {
+          aiAnalysisEnabled: formState.monitoringEnabled,
+          realTimeAlerts: formState.realTimeAlerts,
+          weeklyReports: formState.weeklyReports,
+          contentFiltering: true,
+        },
+        bio: "",
+        nativeLanguage: "",
+        learningLanguage: "",
+        location: "",
+      });
+    } else if (userRole === 'faculty') {
+      Object.assign(onboardingData, {
+        bio: formState.bio,
+        school: formState.department,
+        nativeLanguage: "",
+        learningLanguage: "",
+        location: "",
+        monitoringSettings: {
+          aiAnalysisEnabled: false,
+          realTimeAlerts: false,
+          weeklyReports: false,
+          contentFiltering: false,
+        },
+      });
+    }
 
     onboardingMutation(onboardingData);
   };
@@ -144,15 +200,42 @@ const OnboardingPage = () => {
     toast.success("Random avatar generated!");
   };
 
-  // Helper function to get field errors
   const getFieldError = (fieldName) => {
     return validationErrors[fieldName] || [];
   };
 
-  // Helper function to check if field has error
   const hasFieldError = (fieldName) => {
     return validationErrors[fieldName] && validationErrors[fieldName].length > 0;
   };
+
+  // Role-specific content
+  const getRoleContent = () => {
+    const roleConfig = {
+      student: {
+        title: "Student Setup",
+        subtitle: "Quick setup for safe online learning and communication",
+        icon: GraduationCapIcon,
+        color: "text-secondary"
+      },
+      parent: {
+        title: "Parent Setup", 
+        subtitle: "Configure monitoring and safety settings for your child",
+        icon: UsersIcon,
+        color: "text-info"
+      },
+      faculty: {
+        title: "Faculty Setup",
+        subtitle: "Complete your teaching profile setup",
+        icon: SchoolIcon,
+        color: "text-primary"
+      }
+    };
+
+    return roleConfig[userRole] || roleConfig.student;
+  };
+
+  const roleContent = getRoleContent();
+  const RoleIcon = roleContent.icon;
 
   return (
     <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
@@ -160,11 +243,11 @@ const OnboardingPage = () => {
         <div className="card-body p-6 sm:p-8">
           <div className="text-center mb-6">
             <div className="w-16 h-16 mx-auto mb-4 bg-primary rounded-full flex items-center justify-center">
-              <ShieldIcon className="size-8 text-primary-content" />
+              <RoleIcon className={`size-8 ${roleContent.color}`} />
             </div>
-            <h1 className="text-3xl font-bold">COCOON Setup</h1>
+            <h1 className="text-3xl font-bold">{roleContent.title}</h1>
             <p className="text-base-content opacity-70 mt-2">
-              Quick setup for safe online learning and communication
+              {roleContent.subtitle}
             </p>
           </div>
 
@@ -208,7 +291,7 @@ const OnboardingPage = () => {
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg flex items-center gap-2">
-                <GraduationCapIcon className="size-5 text-secondary" />
+                <UserIcon className="size-5 text-secondary" />
                 Basic Information
               </h3>
               
@@ -231,219 +314,315 @@ const OnboardingPage = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Age</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="5"
-                    max="18"
-                    value={formState.age}
-                    onChange={(e) => setFormState({ ...formState, age: e.target.value })}
-                    className={`input input-bordered w-full ${hasFieldError('age') ? 'input-error' : ''}`}
-                    placeholder="Your age"
-                  />
-                  {hasFieldError('age') && (
-                    <label className="label">
-                      <span className="label-text-alt text-error">{getFieldError('age').join(', ')}</span>
-                    </label>
-                  )}
-                </div>
+              {/* Student-specific fields */}
+              {userRole === 'student' && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">Age</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="5"
+                        max="18"
+                        value={formState.age}
+                        onChange={(e) => setFormState({ ...formState, age: e.target.value })}
+                        className={`input input-bordered w-full ${hasFieldError('age') ? 'input-error' : ''}`}
+                        placeholder="Your age"
+                      />
+                      {hasFieldError('age') && (
+                        <label className="label">
+                          <span className="label-text-alt text-error">{getFieldError('age').join(', ')}</span>
+                        </label>
+                      )}
+                    </div>
 
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">Grade</span>
+                      </label>
+                      <select
+                        value={formState.grade}
+                        onChange={(e) => setFormState({ ...formState, grade: e.target.value })}
+                        className={`select select-bordered w-full ${hasFieldError('grade') ? 'select-error' : ''}`}
+                      >
+                        <option value="">Select grade</option>
+                        <option value="kindergarten">Kindergarten</option>
+                        <option value="1st">1st Grade</option>
+                        <option value="2nd">2nd Grade</option>
+                        <option value="3rd">3rd Grade</option>
+                        <option value="4th">4th Grade</option>
+                        <option value="5th">5th Grade</option>
+                        <option value="6th">6th Grade</option>
+                        <option value="7th">7th Grade</option>
+                        <option value="8th">8th Grade</option>
+                        <option value="9th">9th Grade</option>
+                        <option value="10th">10th Grade</option>
+                        <option value="11th">11th Grade</option>
+                        <option value="12th">12th Grade</option>
+                        <option value="college">College</option>
+                      </select>
+                      {hasFieldError('grade') && (
+                        <label className="label">
+                          <span className="label-text-alt text-error">{getFieldError('grade').join(', ')}</span>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">School</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formState.school}
+                      onChange={(e) => setFormState({ ...formState, school: e.target.value })}
+                      className={`input input-bordered w-full ${hasFieldError('school') ? 'input-error' : ''}`}
+                      placeholder="Your school name"
+                    />
+                    {hasFieldError('school') && (
+                      <label className="label">
+                        <span className="label-text-alt text-error">{getFieldError('school').join(', ')}</span>
+                      </label>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Faculty-specific fields */}
+              {userRole === 'faculty' && (
+                <>
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Bio</span>
+                    </label>
+                    <textarea
+                      value={formState.bio}
+                      onChange={(e) => setFormState({ ...formState, bio: e.target.value })}
+                      className={`textarea textarea-bordered w-full ${hasFieldError('bio') ? 'textarea-error' : ''}`}
+                      placeholder="Tell us about your teaching experience and expertise..."
+                      rows={3}
+                    />
+                    {hasFieldError('bio') && (
+                      <label className="label">
+                        <span className="label-text-alt text-error">{getFieldError('bio').join(', ')}</span>
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Department/Subject</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formState.department}
+                      onChange={(e) => setFormState({ ...formState, department: e.target.value })}
+                      className={`input input-bordered w-full ${hasFieldError('department') ? 'input-error' : ''}`}
+                      placeholder="e.g., Mathematics, Science, English..."
+                    />
+                    {hasFieldError('department') && (
+                      <label className="label">
+                        <span className="label-text-alt text-error">{getFieldError('department').join(', ')}</span>
+                      </label>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Safety Settings - Only for students */}
+            {userRole === 'student' && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <ShieldIcon className="size-5 text-accent" />
+                  Safety Settings
+                </h3>
+                
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Grade</span>
+                    <span className="label-text">Safety Level</span>
                   </label>
                   <select
-                    value={formState.grade}
-                    onChange={(e) => setFormState({ ...formState, grade: e.target.value })}
-                    className={`select select-bordered w-full ${hasFieldError('grade') ? 'select-error' : ''}`}
+                    value={formState.safetyLevel}
+                    onChange={(e) => setFormState({ ...formState, safetyLevel: e.target.value })}
+                    className={`select select-bordered w-full ${hasFieldError('safetyLevel') ? 'select-error' : ''}`}
                   >
-                    <option value="">Select grade</option>
-                    <option value="kindergarten">Kindergarten</option>
-                    <option value="1st">1st Grade</option>
-                    <option value="2nd">2nd Grade</option>
-                    <option value="3rd">3rd Grade</option>
-                    <option value="4th">4th Grade</option>
-                    <option value="5th">5th Grade</option>
-                    <option value="6th">6th Grade</option>
-                    <option value="7th">7th Grade</option>
-                    <option value="8th">8th Grade</option>
-                    <option value="9th">9th Grade</option>
-                    <option value="10th">10th Grade</option>
-                    <option value="11th">11th Grade</option>
-                    <option value="12th">12th Grade</option>
-                    <option value="college">College</option>
+                    <option value="strict">Strict - Maximum protection</option>
+                    <option value="moderate">Moderate - Balanced approach</option>
+                    <option value="relaxed">Relaxed - Minimal restrictions</option>
                   </select>
-                  {hasFieldError('grade') && (
+                  {hasFieldError('safetyLevel') && (
                     <label className="label">
-                      <span className="label-text-alt text-error">{getFieldError('grade').join(', ')}</span>
+                      <span className="label-text-alt text-error">{getFieldError('safetyLevel').join(', ')}</span>
                     </label>
                   )}
                 </div>
-              </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">School</span>
-                </label>
-                <input
-                  type="text"
-                  value={formState.school}
-                  onChange={(e) => setFormState({ ...formState, school: e.target.value })}
-                  className={`input input-bordered w-full ${hasFieldError('school') ? 'input-error' : ''}`}
-                  placeholder="Your school name"
-                />
-                {hasFieldError('school') && (
-                  <label className="label">
-                    <span className="label-text-alt text-error">{getFieldError('school').join(', ')}</span>
+                <div className="space-y-3">
+                  <label className="label cursor-pointer justify-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={formState.allowDirectMessages}
+                      onChange={(e) => setFormState({ ...formState, allowDirectMessages: e.target.checked })}
+                    />
+                    <span className="label-text">Allow Direct Messages</span>
                   </label>
-                )}
-              </div>
-            </div>
-
-            {/* Safety Settings */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <ShieldIcon className="size-5 text-accent" />
-                Safety Settings
-              </h3>
-              
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Safety Level</span>
-                </label>
-                <select
-                  value={formState.safetyLevel}
-                  onChange={(e) => setFormState({ ...formState, safetyLevel: e.target.value })}
-                  className={`select select-bordered w-full ${hasFieldError('safetyLevel') ? 'select-error' : ''}`}
-                >
-                  <option value="strict">Strict - Maximum protection</option>
-                  <option value="moderate">Moderate - Balanced approach</option>
-                  <option value="relaxed">Relaxed - Minimal restrictions</option>
-                </select>
-                {hasFieldError('safetyLevel') && (
-                  <label className="label">
-                    <span className="label-text-alt text-error">{getFieldError('safetyLevel').join(', ')}</span>
+                  <label className="label cursor-pointer justify-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={formState.allowGroupChats}
+                      onChange={(e) => setFormState({ ...formState, allowGroupChats: e.target.checked })}
+                    />
+                    <span className="label-text">Allow Group Chats</span>
                   </label>
-                )}
+                </div>
               </div>
+            )}
 
-              <div className="space-y-3">
-                <label className="label cursor-pointer justify-start gap-2">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-sm"
-                    checked={formState.allowDirectMessages}
-                    onChange={(e) => setFormState({ ...formState, allowDirectMessages: e.target.checked })}
-                  />
-                  <span className="label-text">Allow Direct Messages</span>
-                </label>
-                <label className="label cursor-pointer justify-start gap-2">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-sm"
-                    checked={formState.allowGroupChats}
-                    onChange={(e) => setFormState({ ...formState, allowGroupChats: e.target.checked })}
-                  />
-                  <span className="label-text">Allow Group Chats</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Emergency Contact */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <UsersIcon className="size-5 text-info" />
-                Emergency Contact
-              </h3>
-              
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Contact Name *</span>
-                </label>
-                <input
-                  type="text"
-                  value={formState.emergencyContactName}
-                  onChange={(e) => setFormState({ ...formState, emergencyContactName: e.target.value })}
-                  className={`input input-bordered w-full ${hasFieldError('emergencyContactName') ? 'input-error' : ''}`}
-                  placeholder="Parent or guardian name"
-                  required
-                />
-                {hasFieldError('emergencyContactName') && (
-                  <label className="label">
-                    <span className="label-text-alt text-error">{getFieldError('emergencyContactName').join(', ')}</span>
+            {/* Monitoring Settings - Only for parents */}
+            {userRole === 'parent' && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <ShieldIcon className="size-5 text-accent" />
+                  Monitoring Settings
+                </h3>
+                
+                <div className="space-y-3">
+                  <label className="label cursor-pointer justify-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={formState.monitoringEnabled}
+                      onChange={(e) => setFormState({ ...formState, monitoringEnabled: e.target.checked })}
+                    />
+                    <span className="label-text">Enable AI Monitoring</span>
                   </label>
-                )}
+                  <label className="label cursor-pointer justify-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={formState.realTimeAlerts}
+                      onChange={(e) => setFormState({ ...formState, realTimeAlerts: e.target.checked })}
+                    />
+                    <span className="label-text">Real-time Safety Alerts</span>
+                  </label>
+                  <label className="label cursor-pointer justify-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={formState.weeklyReports}
+                      onChange={(e) => setFormState({ ...formState, weeklyReports: e.target.checked })}
+                    />
+                    <span className="label-text">Weekly Activity Reports</span>
+                  </label>
+                </div>
               </div>
+            )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Emergency Contact - Only for students */}
+            {userRole === 'student' && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <UsersIcon className="size-5 text-info" />
+                  Emergency Contact
+                </h3>
+                
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Relationship</span>
+                    <span className="label-text">Contact Name *</span>
                   </label>
                   <input
                     type="text"
-                    value={formState.emergencyContactRelationship}
-                    onChange={(e) => setFormState({ ...formState, emergencyContactRelationship: e.target.value })}
-                    className={`input input-bordered w-full ${hasFieldError('emergencyContactRelationship') ? 'input-error' : ''}`}
-                    placeholder="Parent, Guardian, etc."
+                    value={formState.emergencyContactName}
+                    onChange={(e) => setFormState({ ...formState, emergencyContactName: e.target.value })}
+                    className={`input input-bordered w-full ${hasFieldError('emergencyContactName') ? 'input-error' : ''}`}
+                    placeholder="Parent or guardian name"
+                    required
                   />
-                  {hasFieldError('emergencyContactRelationship') && (
+                  {hasFieldError('emergencyContactName') && (
                     <label className="label">
-                      <span className="label-text-alt text-error">{getFieldError('emergencyContactRelationship').join(', ')}</span>
+                      <span className="label-text-alt text-error">{getFieldError('emergencyContactName').join(', ')}</span>
                     </label>
                   )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Relationship</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formState.emergencyContactRelationship}
+                      onChange={(e) => setFormState({ ...formState, emergencyContactRelationship: e.target.value })}
+                      className={`input input-bordered w-full ${hasFieldError('emergencyContactRelationship') ? 'input-error' : ''}`}
+                      placeholder="Parent, Guardian, etc."
+                    />
+                    {hasFieldError('emergencyContactRelationship') && (
+                      <label className="label">
+                        <span className="label-text-alt text-error">{getFieldError('emergencyContactRelationship').join(', ')}</span>
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Phone Number *</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={formState.emergencyContactPhone}
+                      onChange={(e) => setFormState({ ...formState, emergencyContactPhone: e.target.value })}
+                      className={`input input-bordered w-full ${hasFieldError('emergencyContactPhone') ? 'input-error' : ''}`}
+                      placeholder="+1 (555) 123-4567"
+                      required
+                    />
+                    {hasFieldError('emergencyContactPhone') && (
+                      <label className="label">
+                        <span className="label-text-alt text-error">{getFieldError('emergencyContactPhone').join(', ')}</span>
+                      </label>
+                    )}
+                  </div>
                 </div>
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Phone Number *</span>
+                    <span className="label-text">Email Address (Optional)</span>
                   </label>
                   <input
-                    type="tel"
-                    value={formState.emergencyContactPhone}
-                    onChange={(e) => setFormState({ ...formState, emergencyContactPhone: e.target.value })}
-                    className={`input input-bordered w-full ${hasFieldError('emergencyContactPhone') ? 'input-error' : ''}`}
-                    placeholder="+1 (555) 123-4567"
-                    required
+                    type="email"
+                    value={formState.emergencyContactEmail}
+                    onChange={(e) => setFormState({ ...formState, emergencyContactEmail: e.target.value })}
+                    className={`input input-bordered w-full ${hasFieldError('emergencyContactEmail') ? 'input-error' : ''}`}
+                    placeholder="contact@example.com"
                   />
-                  {hasFieldError('emergencyContactPhone') && (
+                  {hasFieldError('emergencyContactEmail') && (
                     <label className="label">
-                      <span className="label-text-alt text-error">{getFieldError('emergencyContactPhone').join(', ')}</span>
+                      <span className="label-text-alt text-error">{getFieldError('emergencyContactEmail').join(', ')}</span>
                     </label>
                   )}
                 </div>
               </div>
+            )}
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Email Address (Optional)</span>
-                </label>
-                <input
-                  type="email"
-                  value={formState.emergencyContactEmail}
-                  onChange={(e) => setFormState({ ...formState, emergencyContactEmail: e.target.value })}
-                  className={`input input-bordered w-full ${hasFieldError('emergencyContactEmail') ? 'input-error' : ''}`}
-                  placeholder="contact@example.com"
-                />
-                {hasFieldError('emergencyContactEmail') && (
-                  <label className="label">
-                    <span className="label-text-alt text-error">{getFieldError('emergencyContactEmail').join(', ')}</span>
-                  </label>
-                )}
-              </div>
-            </div>
-
-            {/* Info Alert */}
+            {/* Role-specific Info Alert */}
             <div className="alert alert-info">
               <ShieldIcon className="size-6" />
               <div>
-                <h3 className="font-bold">COCOON Safety Features</h3>
+                <h3 className="font-bold">
+                  {userRole === 'student' && "COCOON Safety Features"}
+                  {userRole === 'parent' && "Parent Monitoring Features"}
+                  {userRole === 'faculty' && "Faculty Features"}
+                </h3>
                 <div className="text-sm">
-                  Your profile will be protected with AI monitoring, real-time alerts, and parent oversight.
+                  {userRole === 'student' && "Your profile will be protected with AI monitoring, real-time alerts, and parent oversight."}
+                  {userRole === 'parent' && "Monitor your child's online activities with AI-powered safety features and detailed reports."}
+                  {userRole === 'faculty' && "Access classroom management tools and student safety monitoring features."}
                 </div>
               </div>
             </div>
@@ -455,7 +634,7 @@ const OnboardingPage = () => {
                   <div className="w-5 h-5 mr-2">
                     <Logo size="small" showText={false} />
                   </div>
-                  Complete COCOON Setup
+                  Complete {userRole === 'student' ? 'Student' : userRole === 'parent' ? 'Parent' : 'Faculty'} Setup
                 </>
               ) : (
                 <>

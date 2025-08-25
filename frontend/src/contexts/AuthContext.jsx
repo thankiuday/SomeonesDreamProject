@@ -134,7 +134,10 @@ export const AuthProvider = ({ children }) => {
     if (isAuthenticated && !isOnboarded && pathname !== "/onboarding") {
       console.log("📝 Redirecting to onboarding - not onboarded");
       console.log("📝 User role:", authUser?.role, "Current path:", pathname);
-      navigate("/onboarding", { replace: true });
+      // Add small delay to ensure state is fully updated
+      setTimeout(() => {
+        navigate("/onboarding", { replace: true });
+      }, 100);
       return;
     }
 
@@ -142,7 +145,10 @@ export const AuthProvider = ({ children }) => {
     if (isAuthenticated && !isOnboarded && (pathname === "/login" || pathname === "/signup")) {
       console.log("📝 Redirecting to onboarding - user is authenticated but not onboarded");
       console.log("📝 User role:", authUser?.role, "Current path:", pathname);
-      navigate("/onboarding", { replace: true });
+      // Add small delay to ensure state is fully updated
+      setTimeout(() => {
+        navigate("/onboarding", { replace: true });
+      }, 100);
       return;
     }
 
@@ -151,7 +157,10 @@ export const AuthProvider = ({ children }) => {
       console.log("🏠 Redirecting to dashboard - user is authenticated and onboarded");
       console.log("🏠 User role:", authUser?.role, "Dashboard path:", getDashboardPath());
       clearLogoutFlag();
-      navigate(getDashboardPath(), { replace: true });
+      // Add small delay to ensure state is fully updated
+      setTimeout(() => {
+        navigate(getDashboardPath(), { replace: true });
+      }, 100);
       return;
     }
 

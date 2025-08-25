@@ -16,7 +16,11 @@ const useSignUp = () => {
         isOnboarded: data?.user?.isOnboarded
       });
       
-      // Invalidate auth user query to trigger refetch
+      // Immediately update the auth query data instead of just invalidating
+      queryClient.setQueryData(["authUser"], { user: data.user });
+      console.log("🔄 Auth query data immediately updated");
+      
+      // Also invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
       console.log("🔄 Auth query invalidated - should trigger refetch");
       

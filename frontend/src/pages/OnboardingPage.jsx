@@ -57,13 +57,24 @@ const OnboardingPage = () => {
 
   const { mutate: onboardingMutation, isPending } = useMutation({
     mutationFn: completeOnboarding,
-    onSuccess: () => {
+    onSuccess: (data) => {
       const roleMessages = {
         student: "Student profile setup completed!",
         parent: "Parent profile setup completed!",
         faculty: "Faculty profile setup completed!"
       };
       toast.success(roleMessages[userRole] || "Profile setup completed!");
+      
+      // Immediately update the auth query data to mark user as onboarded
+      queryClient.setQueryData(["authUser"], (oldData) => ({
+        user: {
+          ...oldData.user,
+          isOnboarded: true
+        }
+      }));
+      console.log("🔄 Auth query data updated - user marked as onboarded");
+      
+      // Also invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
       setValidationErrors({});
       

@@ -1,31 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '../store/useThemeStore.js';
 import { toast } from 'react-hot-toast';
+import { getTheme, updateTheme, checkServerHealth } from '../lib/api.js';
 
 // API functions for theme management
 const getThemeFromDB = async () => {
   try {
-    const response = await fetch('/api/users/theme', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    console.log('Theme API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.url
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Theme API Error Response:', errorText);
-      throw new Error(`Failed to fetch theme: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await getTheme();
     console.log('Theme API Success:', data);
     return data.theme;
   } catch (error) {
@@ -38,28 +19,7 @@ const updateThemeInDB = async (theme) => {
   try {
     console.log('Sending theme to API:', theme);
     
-    const response = await fetch('/api/users/theme', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ theme }),
-    });
-
-    console.log('Update Theme API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.url
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Update Theme API Error Response:', errorText);
-      throw new Error(`Failed to update theme: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await updateTheme(theme);
     console.log('Update Theme API Success:', data);
     return data.theme;
   } catch (error) {
@@ -78,6 +38,8 @@ export const useTheme = () => {
     queryFn: getThemeFromDB,
     enabled: false, // Don't auto-fetch, we'll trigger it manually
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1, // Only retry once
+    retryDelay: 1000, // Wait 1 second before retry
   });
 
   // Mutation to update theme in database
@@ -122,15 +84,13 @@ export const useTheme = () => {
       console.log('Loading theme from database...');
       
       // First, let's test if the server is reachable
-      const testResponse = await fetch('/api/health', {
-        method: 'GET',
-        credentials: 'include',
-      });
-      
-      if (testResponse.ok) {
+      try {
+        await checkServerHealth();
         console.log('Server is reachable');
-      } else {
-        console.error('Server health check failed:', testResponse.status);
+      } catch (error) {
+        console.error('Server health check failed:', error.message);
+        // Don't throw here, just log the error and continue
+        return;
       }
       
       const dbTheme = await queryClient.fetchQuery({
@@ -143,7 +103,8 @@ export const useTheme = () => {
       }
     } catch (error) {
       console.error('Error loading theme from database:', error);
-      // Keep current theme if loading fails
+      // Keep current theme if loading fails - don't show error to user
+      // This is expected behavior when user is not authenticated
     }
   };
 

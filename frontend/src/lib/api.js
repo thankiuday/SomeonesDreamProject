@@ -238,3 +238,20 @@ export async function markMessageAsRead(messageId) {
   const response = await axiosInstance.put(`/faculty-messaging/messages/${messageId}/read`);
   return response.data;
 }
+
+// Theme management API functions
+export async function getTheme() {
+  const response = await axiosInstance.get("/users/theme");
+  return response.data;
+}
+
+export async function updateTheme(theme) {
+  const response = await axiosInstance.put("/users/theme", { theme });
+  return response.data;
+}
+
+// Health check API function
+export async function checkServerHealth() {
+  const response = await axiosInstance.get("/health");
+  return response.data;
+}

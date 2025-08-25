@@ -80,6 +80,12 @@ export const useTheme = () => {
 
   // Function to load theme from database
   const loadThemeFromDB = async () => {
+    // TEMPORARILY DISABLED - Will be re-enabled after deployment
+    console.log('Theme loading from database temporarily disabled during deployment');
+    return;
+    
+    // Original code (commented out for now):
+    /*
     try {
       console.log('Loading theme from database...');
       
@@ -106,6 +112,7 @@ export const useTheme = () => {
       // Keep current theme if loading fails - don't show error to user
       // This is expected behavior when user is not authenticated
     }
+    */
   };
 
   return {
